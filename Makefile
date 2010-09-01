@@ -1,8 +1,6 @@
 EXTRA_CFLAGS = -I/usr/include
 
 obj-m	:= psjailbreak.o 
-obj-m	:= kernel-crash.o 
-obj-m	:= hub.o 
 
 KDIR	:= /home/kakaroto/kernel-2.6.28/
 PWD	:= $(shell pwd)

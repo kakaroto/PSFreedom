@@ -1,4 +1,8 @@
 *~
 *.ko
 *.o
-
+core
+.depend
+.*.cmd
+*.mod.c
+.tmp_versions

@@ -36,4 +36,18 @@ struct usb_hub_header_descriptor {
 
 #define USB_DT_HUB_HEADER_SIZE(n)	(sizeof(struct usb_hub_header_descriptor))
 
+struct hub_port {
+  int connect;
+  int enable;
+  int suspend;
+  int reset;
+  int power;
+  int low_speed;
+  int high_speed;
+  int connect_changed;
+  int enable_changed;
+  int suspend_changed;
+  int reset_changed;
+};
+
 #endif /* __LINUX_USB_HUB_H */
