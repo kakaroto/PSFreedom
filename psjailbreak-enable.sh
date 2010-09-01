@@ -44,7 +44,7 @@ fi
 
 /sbin/lsmod | grep psjailbreak > /dev/null                         
 if [ $? != 0 ]; then                                         
-    /sbin/modprobe psjailbreak
+    insmod psjailbreak.ko
     RC=$?                                    
 fi                                                                   
                                                             

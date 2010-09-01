@@ -37,8 +37,8 @@ static void hub_interrupt_transmit(struct psjailb_device *dev);
  * DO NOT REUSE THESE IDs with a protocol-incompatible driver!!  Ever!!
  * Instead:  allocate your own, using normal USB-IF procedures.
  */
-#define DRIVER_VENDOR_NUM	0x03eb		/* Atmel Corp */
-#define DRIVER_PRODUCT_NUM	0x0902		/* 4-Port Hub */
+#define DRIVER_VENDOR_NUM	0xaaaa		/* Atmel Corp */
+#define DRIVER_PRODUCT_NUM	0xcccc		/* 4-Port Hub */
 
 
 /*
@@ -52,9 +52,11 @@ static struct usb_device_descriptor hub_device_desc = {
   .bDescriptorType =	USB_DT_DEVICE,
   .bcdUSB =		cpu_to_le16(0x0200),
   .bDeviceClass =	USB_CLASS_HUB,
+  .bDeviceSubClass =	0x01,
+  .bDeviceProtocol =	0x00,
   .idVendor =		cpu_to_le16(DRIVER_VENDOR_NUM),
   .idProduct =		cpu_to_le16(DRIVER_PRODUCT_NUM),
-  .bcdDevice =		cpu_to_le16(0x0000),
+  .bcdDevice =		cpu_to_le16(0x0100),
   .iManufacturer =	0,
   .iProduct =		0,
   .bNumConfigurations =	1,
@@ -118,8 +120,8 @@ static void hub_port_changed (struct psjailb_device *dev);
 static void
 switch_to_port (struct psjailb_device *dev, unsigned int port)
 {
-  DBG (dev, "Switching to port %d. Address is %d\n", dev->current_port,
-      dev->port_address[dev->current_port]);
+  DBG (dev, "Switching to port %d. Address is %d\n", port,
+      dev->port_address[port]);
   dev->current_port = port;
   usb_gadget_set_address (dev->port_address[port]);
 }
