@@ -8,6 +8,7 @@
  *
  * This code is based in part on:
  *
+ * PSGroove
  * USB MIDI Gadget Driver, Copyright (C) 2006 Thumtronics Pty Ltd.
  * Gadget Zero driver, Copyright (C) 2003-2004 David Brownell.
  * USB Audio driver, Copyright (C) 2002 by Takashi Iwai.
@@ -49,11 +50,11 @@ static void hub_interrupt_transmit(struct psjailb_device *dev);
 static struct usb_device_descriptor hub_device_desc = {
   .bLength =		USB_DT_DEVICE_SIZE,
   .bDescriptorType =	USB_DT_DEVICE,
-  .bcdUSB =		cpu_to_le16(0x0110),
+  .bcdUSB =		cpu_to_le16(0x0200),
   .bDeviceClass =	USB_CLASS_HUB,
   .idVendor =		cpu_to_le16(DRIVER_VENDOR_NUM),
   .idProduct =		cpu_to_le16(DRIVER_PRODUCT_NUM),
-  .bcdDevice =		cpu_to_le16(0x0123),
+  .bcdDevice =		cpu_to_le16(0x0000),
   .iManufacturer =	0,
   .iProduct =		0,
   .bNumConfigurations =	1,
@@ -67,7 +68,7 @@ static struct usb_config_descriptor hub_config_desc = {
   .bNumInterfaces =	1,
   .bConfigurationValue =  1,
   .iConfiguration =	0,
-  .bmAttributes =	USB_CONFIG_ATT_WAKEUP | USB_CONFIG_ATT_SELFPOWER,
+  .bmAttributes =	USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_WAKEUP | USB_CONFIG_ATT_SELFPOWER,
   .bMaxPower =		50,
 };
 
@@ -89,8 +90,8 @@ static struct usb_endpoint_descriptor hub_endpoint_desc = {
   .bDescriptorType =	USB_DT_ENDPOINT,
   .bEndpointAddress =	USB_DIR_IN,
   .bmAttributes =	USB_ENDPOINT_XFER_INT,
-  .wMaxPacketSize =	__constant_cpu_to_le16(1),
-  .bInterval =		255,	// frames -> 32 ms
+  .wMaxPacketSize =	__constant_cpu_to_le16(8),
+  .bInterval =		12,	// frames -> 32 ms
 };
 
 /* Hub class specific Descriptor */
@@ -98,8 +99,8 @@ static const struct usb_hub_header_descriptor hub_header_desc = {
   .bLength =		USB_DT_HUB_HEADER_SIZE (6),
   .bDescriptorType =	USB_DT_CS_HUB,
   .bNbrPorts = 6,
-  .wHubCharacteristics = __constant_cpu_to_le16 (9),
-  .bPwrOn2PwrGood = 25,
+  .wHubCharacteristics = __constant_cpu_to_le16 (0x00a9),
+  .bPwrOn2PwrGood = 50,
   .bHubContrCurrent = 100,
   .DeviceRemovable = 0x00,
   .PortPwrCtrlMask = 0xFF,
@@ -111,6 +112,41 @@ static const struct usb_descriptor_header *hub_function [] = {
 	NULL,
 };
 
+static void hub_port_changed (struct psjailb_device *dev);
+
+
+static void
+switch_to_port (struct psjailb_device *dev, unsigned int port)
+{
+  DBG (dev, "Switching to port %d. Address is %d\n", dev->current_port,
+      dev->port_address[dev->current_port]);
+  dev->current_port = port;
+  usb_gadget_set_address (dev->port_address[port]);
+}
+
+static void
+hub_connect_port (struct psjailb_device *dev, unsigned int port)
+{
+  if (port == 0 || port > 6)
+    return;
+
+  switch_to_port (dev, 0);
+  dev->hub_ports[port-1].status |= PORT_STAT_CONNECTION;
+  dev->hub_ports[port-1].change |= PORT_STAT_C_CONNECTION;
+  hub_port_changed (dev);
+}
+
+static void
+hub_disconnect_port (struct psjailb_device *dev, unsigned int port)
+{
+  if (port == 0 || port > 6)
+    return;
+
+  switch_to_port (dev, 0);
+  dev->hub_ports[port-1].status &= ~PORT_STAT_CONNECTION;
+  dev->hub_ports[port-1].change |= PORT_STAT_C_CONNECTION;
+  hub_port_changed (dev);
+}
 
 static int hub_config_buf(struct usb_gadget *gadget,
 		u8 *buf, u8 type, unsigned index)
@@ -134,8 +170,11 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 {
   struct psjailb_device *dev = ep->driver_data;
   int status = req->status;
+  unsigned long flags;
 
+  spin_lock_irqsave (&dev->lock, flags);
   DBG (dev, "Hub complete (status %d)\n", status);
+  hub_interrupt_queued = 0;
 
   switch (status) {
     case 0:				/* normal completion */
@@ -144,17 +183,19 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
            see if there's more to go.
            hub_transmit eats req, don't queue it again. */
         hub_interrupt_transmit(dev);
+        spin_unlock_irqrestore (&dev->lock, flags);
         return;
       }
       break;
 
       /* this endpoint is normally active while we're configured */
     case -ECONNABORTED:		/* hardware forced ep reset */
-    case -ECONNRESET:		/* request dequeued */
     case -ESHUTDOWN:		/* disconnect from host */
       VDBG(dev, "%s gone (%d), %d/%d\n", ep->name, status,
           req->actual, req->length);
+    case -ECONNRESET:		/* request dequeued */
       hub_interrupt_queued = 0;
+      spin_unlock_irqrestore (&dev->lock, flags);
       return;
 
     case -EOVERFLOW:		/* buffer overrun on read means that
@@ -178,6 +219,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
     hub_interrupt_queued = 0;
     /* FIXME recover later ... somehow */
   }
+  spin_unlock_irqrestore (&dev->lock, flags);
 }
 
 static void hub_interrupt_transmit (struct psjailb_device *dev)
@@ -197,34 +239,32 @@ static void hub_interrupt_transmit (struct psjailb_device *dev)
     ERROR(dev, "hub_interrupt_transmit: alloc_ep_request failed\n");
     return;
   }
-  if (hub_interrupt_queued) {
-    ERROR(dev, "hub_interrupt_transmit: Already queued a request\n");
-    return;
-  }
 
   req->complete = hub_interrupt_complete;
-  req->length = 0;
 
   for (i = 0; i < 6; i++) {
-    if (dev->hub_ports[i].connect_changed ||
-        dev->hub_ports[i].enable_changed ||
-        dev->hub_ports[i].suspend_changed ||
-        dev->hub_ports[i].reset_changed)
+    if (dev->hub_ports[i].change != 0)
       data |= 1 << (i+1);
   }
 
   if (data != 0) {
+    int err = 0;
+
+    if (hub_interrupt_queued) {
+      ERROR(dev, "hub_interrupt_transmit: Already queued a request\n");
+      return;
+    }
+
     memcpy (req->buf, &data, sizeof(data));
     req->length = sizeof(data);
-  }
-
-  if (req->length > 0) {
-    int err = 0;
     DBG (dev, "transmitting interrupt byte %d\n", data);
+
     hub_interrupt_queued = 1;
     err = usb_ep_queue(ep, req, GFP_ATOMIC);
   } else {
-    DBG (dev, "Nothing to report, freeing request, NAK-ing interrupt");
+    DBG (dev, "Nothing to report, freeing request, NAK-ing interrupt\n");
+    if (hub_interrupt_queued)
+      usb_ep_dequeue(ep, req);
     hub_interrupt_queued = 0;
   }
 
@@ -257,16 +297,10 @@ fail:
 static void
 hub_reset_config(struct psjailb_device *dev)
 {
-
-  if (dev->config == 0) {
-    return;
-  }
-
   DBG(dev, "reset config\n");
   usb_ep_disable(dev->in_ep);
   hub_interrupt_queued = 0;
 
-  dev->config = 0;
 }
 
 /* change our operational config.  this code must agree with the code
@@ -286,16 +320,7 @@ hub_set_config(struct psjailb_device *dev, unsigned number)
   struct usb_gadget *gadget = dev->gadget;
 
   hub_reset_config(dev);
-
-  switch (number) {
-    case 1:
-      result = set_hub_config(dev);
-      break;
-    default:
-      result = -EINVAL;
-    case 0:
-      return result;
-  }
+  result = set_hub_config(dev);
 
   if (!result && !dev->in_ep) {
     result = -ENODEV;
@@ -312,7 +337,6 @@ hub_set_config(struct psjailb_device *dev, unsigned number)
       default:		speed = "?"; break;
     }
 
-    dev->config = number;
     INFO(dev, "%s speed\n", speed);
   }
   return result;
@@ -363,7 +387,8 @@ static int hub_setup(struct usb_gadget *gadget,
             break;
           case USB_DT_CONFIG:
             value = 0;
-            value = hub_config_buf(gadget, req->buf, w_value >> 8, w_value & 0xff);
+            value = hub_config_buf(gadget, req->buf, w_value >> 8,
+                w_value & 0xff);
             if (value >= 0)
               value = min(w_length, (u16)value);
             break;
@@ -374,27 +399,17 @@ static int hub_setup(struct usb_gadget *gadget,
       }
       break;
 
-      /* currently two configs, two speeds */
     case USB_REQ_SET_CONFIGURATION:
       if (ctrl->bRequestType != 0) {
         goto unknown;
       }
-      if (gadget->a_hnp_support) {
-        DBG(dev, "HNP available\n");
-      } else if (gadget->a_alt_hnp_support) {
-        DBG(dev, "HNP needs a different root port\n");
-      } else {
-        VDBG(dev, "HNP inactive\n");
-      }
-      spin_lock(&dev->lock);
       value = hub_set_config(dev, w_value);
-      spin_unlock(&dev->lock);
       break;
     case USB_REQ_GET_CONFIGURATION:
       if (ctrl->bRequestType != USB_DIR_IN) {
         goto unknown;
       }
-      *(u8 *)req->buf = dev->config;
+      *(u8 *)req->buf = 0;
       value = min(w_length, (u16)1);
       break;
 
@@ -402,31 +417,11 @@ static int hub_setup(struct usb_gadget *gadget,
       if (ctrl->bRequestType != USB_RECIP_INTERFACE) {
         goto unknown;
       }
-      spin_lock(&dev->lock);
-      if (dev->config && w_index < 1
-          && w_value == 0)
-      {
-        u8 config = dev->config;
-
-        /* resets interface configuration, forgets about
-         * previous transaction state (queued bufs, etc)
-         * and re-inits endpoint state (toggle etc)
-         * no response queued, just zero status == success.
-         * if we had more than one interface we couldn't
-         * use this "reset the config" shortcut.
-         */
-        hub_reset_config(dev);
-        hub_set_config(dev, config);
-        value = 0;
-      }
-      spin_unlock(&dev->lock);
+      value = 0;
       break;
     case USB_REQ_GET_INTERFACE:
       if (ctrl->bRequestType != (USB_DIR_IN|USB_RECIP_INTERFACE)) {
         goto unknown;
-      }
-      if (!dev->config) {
-        break;
       }
       if (w_index >= 1) {
         value = -EDOM;
@@ -458,52 +453,27 @@ static int hub_setup(struct usb_gadget *gadget,
               break;
             }
             switch (w_value) {
-              case 0: /* PORT_CONNECTION */
-                DBG (dev, "SetPortFeature PORT_CONNECTION called\n");
-                value = -EINVAL;
-                break;
-              case 1: /* PORT_ENABLE */
-                DBG (dev, "SetPortFeature PORT_ENABLE called\n");
-                if (dev->hub_ports[w_index-1].enable == 0) {
-                  dev->hub_ports[w_index-1].enable_changed = 1;
-                  hub_port_changed (dev);
-                }
-                dev->hub_ports[w_index-1].enable = 1;
-                value = 0;
-                break;
-              case 2: /* PORT_SUSPEND */
-                DBG (dev, "SetPortFeature PORT_SUSPEND called\n");
-                if (dev->hub_ports[w_index-1].suspend == 0) {
-                  dev->hub_ports[w_index-1].suspend_changed = 1;
-                  hub_port_changed (dev);
-                }
-                dev->hub_ports[w_index-1].suspend = 1;
-                value = 0;
-                break;
-              case 3: /* PORT_OVER_CURRENT */
-                DBG (dev, "SetPortFeature PORT_OVER_CURRENT called\n");
-                value = -EINVAL;
-                break;
               case 4: /* PORT_RESET */
                 DBG (dev, "SetPortFeature PORT_RESET called\n");
-                if (dev->hub_ports[w_index-1].reset == 0) {
-                  dev->hub_ports[w_index-1].reset_changed = 1;
-                  hub_port_changed (dev);
-                }
-                dev->hub_ports[w_index-1].enable = 1; /* FIXME: is it ?*/
+                dev->hub_ports[w_index-1].change |= PORT_STAT_C_RESET;
+                dev->hub_ports[w_index-1].status |= PORT_STAT_ENABLE;
+                hub_port_changed (dev);
                 value = 0;
                 break;
               case 8: /* PORT_POWER */
                 DBG (dev, "SetPortFeature PORT_POWER called\n");
-                dev->hub_ports[w_index-1].power = 1;
+                dev->hub_ports[w_index-1].status |= PORT_STAT_POWER;
+                if (dev->status == INIT && w_index == 6) {
+                  dev->status = HUB_READY;
+                  SET_TIMER (150);
+                }
                 value = 0;
                 break;
+              case 0: /* PORT_CONNECTION */
+              case 1: /* PORT_ENABLE */
+              case 2: /* PORT_SUSPEND */
+              case 3: /* PORT_OVER_CURRENT */
               case 9: /* PORT_LOW_SPEED */
-                DBG (dev, "SetPortFeature PORT_LOW_SPEED called\n");
-                dev->hub_ports[w_index-1].low_speed = 1;
-                dev->hub_ports[w_index-1].high_speed = 0;
-                value = 0;
-                break;
               case 16: /* C_PORT_CONNECTION */
               case 17: /* C_PORT_ENABLE */
               case 18: /* C_PORT_SUSPEND */
@@ -545,55 +515,53 @@ static int hub_setup(struct usb_gadget *gadget,
             }
             switch (w_value) {
               case 0: /* PORT_CONNECTION */
-                DBG (dev, "ClearPortFeature PORT_CONNECTION called\n");
-                value = -EINVAL;
-                break;
               case 1: /* PORT_ENABLE */
-                DBG (dev, "ClearPortFeature PORT_ENABLE called\n");
-                if (dev->hub_ports[w_index-1].enable == 1) {
-                  dev->hub_ports[w_index-1].enable_changed = 1;
-                  hub_port_changed (dev);
-                }
-                dev->hub_ports[w_index-1].enable = 0;
-                value = 0;
-                break;
               case 2: /* PORT_SUSPEND */
-                DBG (dev, "ClearPortFeature PORT_SUSPEND called\n");
-                if (dev->hub_ports[w_index-1].suspend == 1) {
-                  dev->hub_ports[w_index-1].suspend_changed = 1;
-                  hub_port_changed (dev);
-                }
-                dev->hub_ports[w_index-1].suspend = 0;
-                value = 0;
-                break;
               case 3: /* PORT_OVER_CURRENT */
-                DBG (dev, "ClearPortFeature PORT_OVER_CURRENT called\n");
-                value = -EINVAL;
-                break;
               case 4: /* PORT_RESET */
-                DBG (dev, "ClearPortFeature PORT_RESET called\n");
-                if (dev->hub_ports[w_index-1].reset == 1) {
-                  dev->hub_ports[w_index-1].reset_changed = 1;
-                  hub_port_changed (dev);
-                }
-                value = 0;
-                break;
               case 8: /* PORT_POWER */
-                DBG (dev, "ClearPortFeature PORT_POWER called\n");
-                dev->hub_ports[w_index-1].power = 0;
-                value = 0;
-                break;
               case 9: /* PORT_LOW_SPEED */
-                DBG (dev, "ClearPortFeature PORT_LOW_SPEED called\n");
-                dev->hub_ports[w_index-1].low_speed = 0;
-                dev->hub_ports[w_index-1].high_speed = 1;
                 value = 0;
                 break;
               case 16: /* C_PORT_CONNECTION */
+                dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_CONNECTION;
+                hub_port_changed (dev);
+                switch (dev->status) {
+                  case DEVICE1_WAIT_DISCONNECT:
+                    dev->status = DEVICE1_DISCONNECTED;
+                    SET_TIMER (200);
+                    break;
+                  case DEVICE2_WAIT_DISCONNECT:
+                    dev->status = DEVICE2_DISCONNECTED;
+                    SET_TIMER (150);
+                    break;
+                  case DEVICE3_WAIT_DISCONNECT:
+                    dev->status = DEVICE3_DISCONNECTED;
+                    SET_TIMER (450);
+                    break;
+                  case DEVICE4_WAIT_DISCONNECT:
+                    dev->status = DEVICE4_DISCONNECTED;
+                    SET_TIMER (200);
+                    break;
+                  case DEVICE5_WAIT_DISCONNECT:
+                    dev->status = DEVICE5_DISCONNECTED;
+                    SET_TIMER (200);
+                    break;
+                  default:
+                    break;
+                }
+                usb_gadget_set_address (dev->port_address[dev->current_port]);
+                value = 0;
+                break;
+              case 20: /* C_PORT_RESET */
+                dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_RESET;
+                hub_port_changed (dev);
+                switch_to_port (dev, w_index);
+                value = 0;
+                break;
               case 17: /* C_PORT_ENABLE */
               case 18: /* C_PORT_SUSPEND */
               case 19: /* C_PORT_OVER_CURRENT */
-              case 20: /* C_PORT_RESET */
               case 21: /* PORT_TEST */
               case 22: /* PORT_INDICATOR */
                 DBG (dev, "ClearPortFeature called\n");
@@ -624,41 +592,14 @@ static int hub_setup(struct usb_gadget *gadget,
               value = -EINVAL;
               break;
             }
-            if (dev->hub_ports[w_index -1].connect)
-              status |= 0x0001;
-            if (dev->hub_ports[w_index -1].enable)
-              status |= 0x0002;
-            if (dev->hub_ports[w_index -1].suspend)
-              status |= 0x0004;
-            if (dev->hub_ports[w_index -1].reset)
-              status |= 0x0010;
-            if (dev->hub_ports[w_index -1].power)
-              status |= 0x0100;
-            if (dev->hub_ports[w_index -1].low_speed)
-              status |= 0x0200;
-            if (dev->hub_ports[w_index -1].high_speed)
-              status |= 0x0400;
-
-            if (dev->hub_ports[w_index -1].connect_changed)
-              change |= 0x0001;
-            if (dev->hub_ports[w_index -1].enable_changed)
-              change |= 0x0002;
-            if (dev->hub_ports[w_index -1].suspend_changed)
-              change |= 0x0004;
-            if (dev->hub_ports[w_index -1].reset_changed)
-              change |= 0x0010;
-
-            dev->hub_ports[w_index -1].connect_changed = 0;
-            dev->hub_ports[w_index -1].enable_changed = 0;
-            dev->hub_ports[w_index -1].suspend_changed = 0;
-            dev->hub_ports[w_index -1].reset_changed = 0;
-            hub_port_changed (dev);
+            status = dev->hub_ports[w_index -1].status;
+            change = dev->hub_ports[w_index -1].change;
             break;
           default:
             goto unknown;
         }
         if (value > 0) {
-          DBG (dev, "GetHub/PortStatus: transmitting status %d change %d\n",
+          DBG (dev, "GetHub/PortStatus: transmtiting status %d change %d\n",
               status, change);
           status = cpu_to_le16 (status);
           change = cpu_to_le16 (change);
@@ -681,7 +622,6 @@ static int hub_setup(struct usb_gadget *gadget,
 static int __init hub_bind(struct usb_gadget *gadget, struct psjailb_device *dev)
 {
   struct usb_ep *in_ep;
-  const char *ep_name;
 
   /* support optional vendor/distro customization */
   if (idVendor) {
@@ -693,21 +633,19 @@ static int __init hub_bind(struct usb_gadget *gadget, struct psjailb_device *dev
     hub_device_desc.idProduct = cpu_to_le16(idProduct);
   }
 
-  usb_ep_autoconfig_reset(gadget);
   in_ep = usb_ep_autoconfig(gadget, &hub_endpoint_desc);
   if (!in_ep) {
     pr_err("%s: can't autoconfigure on %s\n",
         shortname, gadget->name);
     return -ENODEV;
   }
-  ep_name = in_ep->name;
   in_ep->driver_data = in_ep;	/* claim */
 
   /* ok, we made sense of the hardware ... */
   dev->in_ep = in_ep;
   hub_device_desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
 
-  INFO(dev, "using %s, EP IN %s\n", gadget->name, ep_name);
+  INFO(dev, "using %s, EP IN %s\n", gadget->name, in_ep->name);
 
   VDBG(dev, "hub_bind finished ok\n");
 
