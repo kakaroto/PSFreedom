@@ -560,8 +560,35 @@ static int hub_setup(struct usb_gadget *gadget,
               case 20: /* C_PORT_RESET */
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_RESET;
                 hub_port_changed (dev);
-                switch_to_port_delayed = w_index;
-                SET_TIMER (0);
+                switch (dev->status) {
+                  case DEVICE1_WAIT_READY:
+                    if (w_index == 1)
+                      switch_to_port_delayed = w_index;
+                    SET_TIMER (0);
+                    break;
+                  case DEVICE2_WAIT_READY:
+                    if (w_index == 2)
+                      switch_to_port_delayed = w_index;
+                    SET_TIMER (0);
+                    break;
+                  case DEVICE3_WAIT_READY:
+                    if (w_index == 3)
+                      switch_to_port_delayed = w_index;
+                    SET_TIMER (0);
+                    break;
+                  case DEVICE4_WAIT_READY:
+                    if (w_index == 4)
+                      switch_to_port_delayed = w_index;
+                    SET_TIMER (0);
+                    break;
+                  case DEVICE5_WAIT_READY:
+                    if (w_index == 5)
+                      switch_to_port_delayed = w_index;
+                    SET_TIMER (0);
+                    break;
+                  default:
+                    break;
+                }
                 value = 0;
                 break;
               case 17: /* C_PORT_ENABLE */
