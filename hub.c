@@ -120,6 +120,8 @@ static void hub_port_changed (struct psjailb_device *dev);
 static void
 switch_to_port (struct psjailb_device *dev, unsigned int port)
 {
+  if (dev->current_port == port)
+    return;
   DBG (dev, "Switching to port %d. Address is %d\n", port,
       dev->port_address[port]);
   dev->current_port = port;
