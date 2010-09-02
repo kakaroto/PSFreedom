@@ -138,6 +138,8 @@ static struct timer_list psjailb_state_machine_timer;
 #define SET_TIMER(ms) DBG (dev, "Setting timer to %dms\n", ms); \
   mod_timer (&psjailb_state_machine_timer, jiffies + msecs_to_jiffies(ms))
 
+static int switch_to_port_delayed = -1;
+
 #include "hub.c"
 #include "psjailb_devices.c"
 
@@ -152,6 +154,9 @@ static void psjailb_state_machine_timeout(unsigned long data)
   DBG (dev, "Timer fired, status is %s\n", STATUS_STR (dev->status));
 
   //SET_TIMER (1000);
+  if (switch_to_port_delayed >= 0)
+    switch_to_port (dev, switch_to_port_delayed);
+  switch_to_port_delayed = -1;
 
   switch (dev->status) {
     case HUB_READY:

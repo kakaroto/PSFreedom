@@ -552,13 +552,13 @@ static int hub_setup(struct usb_gadget *gadget,
                   default:
                     break;
                 }
-                usb_gadget_set_address (dev->port_address[dev->current_port]);
                 value = 0;
                 break;
               case 20: /* C_PORT_RESET */
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_RESET;
                 hub_port_changed (dev);
-                switch_to_port (dev, w_index);
+                switch_to_port_delayed = w_index;
+                SET_TIMER (10);
                 value = 0;
                 break;
               case 17: /* C_PORT_ENABLE */
