@@ -129,6 +129,13 @@ switch_to_port (struct psjailb_device *dev, unsigned int port)
 }
 
 static void
+hub_reset_data_toggle (struct psjailb_device *dev)
+{
+  usb_ep_disable(dev->in_ep);
+  usb_ep_enable(dev->in_ep, &hub_endpoint_desc);
+}
+
+static void
 hub_connect_port (struct psjailb_device *dev, unsigned int port)
 {
   if (port == 0 || port > 6)
