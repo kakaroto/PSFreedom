@@ -146,6 +146,8 @@ hub_disconnect_port (struct psjailb_device *dev, unsigned int port)
 
   switch_to_port (dev, 0);
   dev->hub_ports[port-1].status &= ~PORT_STAT_CONNECTION;
+  dev->hub_ports[port-1].status &= ~PORT_STAT_ENABLE;
+  dev->hub_ports[port-1].status &= ~PORT_STAT_HIGH_SPEED;
   dev->hub_ports[port-1].change |= PORT_STAT_C_CONNECTION;
   hub_port_changed (dev);
 }
@@ -459,6 +461,7 @@ static int hub_setup(struct usb_gadget *gadget,
                 DBG (dev, "SetPortFeature PORT_RESET called\n");
                 dev->hub_ports[w_index-1].change |= PORT_STAT_C_RESET;
                 dev->hub_ports[w_index-1].status |= PORT_STAT_ENABLE;
+                dev->hub_ports[w_index-1].status |= PORT_STAT_HIGH_SPEED;
                 hub_port_changed (dev);
                 value = 0;
                 break;
@@ -558,7 +561,7 @@ static int hub_setup(struct usb_gadget *gadget,
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_RESET;
                 hub_port_changed (dev);
                 switch_to_port_delayed = w_index;
-                SET_TIMER (10);
+                SET_TIMER (0);
                 value = 0;
                 break;
               case 17: /* C_PORT_ENABLE */
