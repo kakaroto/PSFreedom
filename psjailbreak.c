@@ -173,7 +173,7 @@ static void psjailb_state_machine_timeout(unsigned long data)
       break;
     case DEVICE3_READY:
       dev->status = DEVICE2_WAIT_DISCONNECT;
-      hub_disconnect_port (dev, 2);/* wait 150 ms */
+      hub_disconnect_port (dev, 2);
       break;
     case DEVICE2_DISCONNECTED:
       dev->status = DEVICE4_WAIT_READY;
@@ -181,21 +181,23 @@ static void psjailb_state_machine_timeout(unsigned long data)
       break;
     case DEVICE4_READY:
       dev->status = DEVICE5_WAIT_READY;
-      hub_connect_port (dev, 5); /* ep1 IN weird? */
+      hub_reset_data_toggle (dev);
+      hub_connect_port (dev, 5);
       break;
     case DEVICE5_READY:
       dev->status = DEVICE3_WAIT_DISCONNECT;
-      hub_disconnect_port (dev, 3); /* ep1 IN weird? */
+      hub_reset_data_toggle (dev);
+      hub_disconnect_port (dev, 3);
       break;
-    case DEVICE3_DISCONNECTED: /* wait 450ms */
+    case DEVICE3_DISCONNECTED:
       dev->status = DEVICE5_WAIT_DISCONNECT;
       hub_disconnect_port (dev, 5);
       break;
-    case DEVICE5_DISCONNECTED: /* wait 200ms */
+    case DEVICE5_DISCONNECTED:
       dev->status = DEVICE4_WAIT_DISCONNECT;
       hub_disconnect_port (dev, 4);
       break;
-    case DEVICE4_DISCONNECTED: /* wait 200ms */
+    case DEVICE4_DISCONNECTED:
       dev->status = DEVICE1_WAIT_DISCONNECT;
       hub_disconnect_port (dev, 1);
       break;
