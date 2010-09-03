@@ -197,7 +197,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
         /* our transmit completed.
            see if there's more to go.
            hub_transmit eats req, don't queue it again. */
-        hub_interrupt_transmit(dev);
+        //hub_interrupt_transmit(dev);
         spin_unlock_irqrestore (&dev->lock, flags);
         return;
       }
@@ -303,7 +303,7 @@ static int set_hub_config(struct psjailb_device *dev)
   }
   dev->in_ep->driver_data = dev;
 
-  hub_interrupt_transmit (dev);
+  //hub_interrupt_transmit (dev);
 fail:
   /* caller is responsible for cleanup on error */
   return err;
@@ -541,7 +541,7 @@ static int hub_setup(struct usb_gadget *gadget,
                 break;
               case 16: /* C_PORT_CONNECTION */
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_CONNECTION;
-                hub_port_changed (dev);
+                //hub_port_changed (dev);
                 switch (dev->status) {
                   case DEVICE1_WAIT_DISCONNECT:
                     dev->status = DEVICE1_DISCONNECTED;
