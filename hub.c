@@ -550,32 +550,32 @@ static int hub_setup(struct usb_gadget *gadget,
                 switch (dev->status) {
                   case DEVICE1_WAIT_READY:
                     if (w_index == 1)
-                      switch_to_port_delayed = w_index;
+                      dev->switch_to_port_delayed = w_index;
                     break;
                   case DEVICE2_WAIT_READY:
                     if (w_index == 2)
-                      switch_to_port_delayed = w_index;
+                      dev->switch_to_port_delayed = w_index;
                     break;
                   case DEVICE3_WAIT_READY:
                     if (w_index == 3)
-                      switch_to_port_delayed = w_index;
+                      dev->switch_to_port_delayed = w_index;
                     break;
                   case DEVICE4_WAIT_READY:
                     if (w_index == 4)
-                      switch_to_port_delayed = w_index;
+                      dev->switch_to_port_delayed = w_index;
                     break;
                   case DEVICE5_WAIT_READY:
                     if (w_index == 5)
-                      switch_to_port_delayed = w_index;
+                      dev->switch_to_port_delayed = w_index;
                     break;
                   case DEVICE6_WAIT_READY:
                     if (w_index == 6)
-                      switch_to_port_delayed = w_index;
+                      dev->switch_to_port_delayed = w_index;
                     break;
                   default:
                     break;
                 }
-                if (switch_to_port_delayed >= 0)
+                if (dev->switch_to_port_delayed >= 0)
                   SET_TIMER (0);
                 value = 0;
                 break;

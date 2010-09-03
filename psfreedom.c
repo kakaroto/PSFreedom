@@ -123,6 +123,8 @@ struct psfreedom_device {
   struct usb_ep		*in_ep;
   struct usb_ep		*out_ep;
   enum PsfreedomState	status;
+  /* The port to switch to after a delay */
+  int			switch_to_port_delayed;
   int			challenge_len;
   int			response_len;
   struct hub_port	hub_ports[6];
@@ -163,9 +165,6 @@ static struct timer_list psfreedom_state_machine_timer;
 #define SET_TIMER(ms) DBG (dev, "Setting timer to %dms\n", ms); \
   mod_timer (&psfreedom_state_machine_timer, jiffies + msecs_to_jiffies(ms))
 
-static int switch_to_port_delayed = -1;
-
-
 #include "hub.c"
 #include "psfreedom_devices.c"
 
@@ -178,10 +177,13 @@ static void psfreedom_state_machine_timeout(unsigned long data)
   spin_lock_irqsave (&dev->lock, flags);
   DBG (dev, "Timer fired, status is %s\n", STATUS_STR (dev->status));
 
-  //SET_TIMER (1000);
-  if (switch_to_port_delayed >= 0)
-    switch_to_port (dev, switch_to_port_delayed);
-  switch_to_port_delayed = -1;
+  /* We need to delay switching the address because otherwise we will respond
+     to the request (that triggered the port switch) with address 0. So we need
+     to reply with the hub's address, THEN switch to 0.
+  */
+  if (dev->switch_to_port_delayed >= 0)
+    switch_to_port (dev, dev->switch_to_port_delayed);
+  dev->switch_to_port_delayed = -1;
 
   switch (dev->status) {
     case HUB_READY:
@@ -285,6 +287,7 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
   devices_disconnect (gadget);
   del_timer (&psfreedom_state_machine_timer);
   timer_added = 0;
+  dev->switch_to_port_delayed = -1;
   dev->status = INIT;
   spin_unlock_irqrestore (&dev->lock, flags);
 }
