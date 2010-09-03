@@ -17,7 +17,7 @@ static struct usb_endpoint_descriptor jig_out_endpoint_desc = {
   .bDescriptorType =	USB_DT_ENDPOINT,
   .bEndpointAddress =	USB_DIR_OUT | 0x02,
   .bmAttributes =	USB_ENDPOINT_XFER_BULK,
-  .wMaxPacketSize =	__constant_cpu_to_le16(64),
+  .wMaxPacketSize =	__constant_cpu_to_le16(8),
   .bInterval =		0x00,
 };
 
@@ -27,7 +27,7 @@ static struct usb_endpoint_descriptor jig_in_endpoint_desc = {
   .bDescriptorType =	USB_DT_ENDPOINT,
   .bEndpointAddress =	USB_DIR_IN | 0x01,
   .bmAttributes =	USB_ENDPOINT_XFER_BULK,
-  .wMaxPacketSize =	__constant_cpu_to_le16(64),
+  .wMaxPacketSize =	__constant_cpu_to_le16(8),
   .bInterval =		0x00,
 };
 

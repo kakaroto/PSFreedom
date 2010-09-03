@@ -452,6 +452,7 @@ static int __init psjailb_bind(struct usb_gadget *gadget)
     return -ENOMEM;
   }
 
+
   spin_lock_init(&dev->lock);
   usb_gadget_set_selfpowered (gadget);
   dev->gadget = gadget;
