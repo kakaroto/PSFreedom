@@ -4,7 +4,7 @@ RC=0
 /sbin/lsmod | grep g_file_storage > /dev/null
 if [ $? = 0 ]; then
     logger "$0: removing g_file_storage"
-    initctl emit G_FILE_STORAGE_REMOVE
+    initctl emit G_FILE_STORAGE_REMOVE > /dev/null
     /sbin/rmmod g_file_storage
 fi
 
@@ -13,7 +13,7 @@ fi
 if [ $? = 0 ]; then
     logger "$0: removing g_nokia"
 
-    initctl emit G_NOKIA_REMOVE
+    initctl emit G_NOKIA_REMOVE > /dev/null
 
     PNATD_PID=`pidof pnatd`
     if [ $? = 0 ]; then
