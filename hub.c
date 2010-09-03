@@ -125,14 +125,7 @@ switch_to_port (struct psjailb_device *dev, unsigned int port)
   DBG (dev, "Switching to port %d. Address is %d\n", port,
       dev->port_address[port]);
   dev->current_port = port;
-  usb_gadget_set_address (dev->port_address[port]);
-}
-
-static void
-hub_reset_data_toggle (struct psjailb_device *dev)
-{
-  usb_ep_disable(dev->in_ep);
-  usb_ep_enable(dev->in_ep, &hub_endpoint_desc);
+  musb_set_address (dev->gadget, dev->port_address[port]);
 }
 
 static void
@@ -142,6 +135,11 @@ hub_connect_port (struct psjailb_device *dev, unsigned int port)
     return;
 
   switch_to_port (dev, 0);
+
+  if (dev->reset_data_toggle == 1)
+    musb_reset_data_toggle (dev->gadget, dev->in_ep);
+  dev->reset_data_toggle = 0;
+
   dev->hub_ports[port-1].status |= PORT_STAT_CONNECTION;
   dev->hub_ports[port-1].status |= PORT_STAT_ENABLE;
   dev->hub_ports[port-1].status |= PORT_STAT_HIGH_SPEED;
@@ -154,6 +152,10 @@ hub_disconnect_port (struct psjailb_device *dev, unsigned int port)
 {
   if (port == 0 || port > 6)
     return;
+
+  if (dev->reset_data_toggle == 1)
+    musb_reset_data_toggle (dev->gadget, dev->in_ep);
+  dev->reset_data_toggle = 0;
 
   switch_to_port (dev, 0);
   dev->hub_ports[port-1].status &= ~PORT_STAT_CONNECTION;
@@ -453,7 +455,7 @@ static int hub_setup(struct usb_gadget *gadget,
             switch (w_value) {
               case 0: /* C_HUB_LOCAL_POWER */
               case 1: /* C_HUB_OVER_CURRENT */
-                DBG (dev, "SetHubFeature called\n");
+                VDBG (dev, "SetHubFeature called\n");
                 value = 0;
                 break;
               default:
@@ -515,7 +517,7 @@ static int hub_setup(struct usb_gadget *gadget,
             switch (w_value) {
               case 0: /* C_HUB_LOCAL_POWER */
               case 1: /* C_HUB_OVER_CURRENT */
-                DBG (dev, "ClearHubFeature called\n");
+                VDBG (dev, "ClearHubFeature called\n");
                 value = 0;
                 break;
               default:
@@ -540,6 +542,7 @@ static int hub_setup(struct usb_gadget *gadget,
                 value = 0;
                 break;
               case 16: /* C_PORT_CONNECTION */
+                DBG (dev, "ClearPortFeature C_PORT_CONNECTION called\n");
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_CONNECTION;
                 //hub_port_changed (dev);
                 switch (dev->status) {
@@ -569,6 +572,7 @@ static int hub_setup(struct usb_gadget *gadget,
                 value = 0;
                 break;
               case 20: /* C_PORT_RESET */
+                DBG (dev, "ClearPortFeature C_PORT_RESET called\n");
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_RESET;
                 hub_port_changed (dev);
                 switch (dev->status) {
