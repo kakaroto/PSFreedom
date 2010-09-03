@@ -17,7 +17,7 @@
  */
 
 #define DEBUG
-#define VERBOSE_DEBUG
+//#define VERBOSE_DEBUG
 
 #include <linux/kernel.h>
 #include <linux/utsname.h>
@@ -30,9 +30,10 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 
-#include "../kernel-2.6.28/drivers/usb/gadget/epautoconf.c"
-#include "../kernel-2.6.28/drivers/usb/gadget/config.c"
-
+#include "../drivers/usb/gadget/epautoconf.c"
+#include "../drivers/usb/gadget/config.c"
+#include "../drivers/usb/musb/musb_core.h"
+#include "../drivers/usb/musb/musb_gadget.h"
 
 /*-------------------------------------------------------------------------*/
 
@@ -104,6 +105,15 @@ enum PsjailbState {
       s==DONE?"DONE":                                           \
       "UNKNOWN_STATE")
 
+#define REQUEST_STR(r) (                        \
+      r==0x8006?"GET_DESCRIPTOR":               \
+      r==0xa006?"GET_HUB_DESCRIPTOR":           \
+      r==0x0009?"SET_CONFIGURATION":            \
+      r==0x2303?"SET_PORT_FEATURE":             \
+      r==0xa300?"GET_PORT_STATUS":              \
+      r==0x2301?"CLEAR_PORT_FEATURE":           \
+      r==0x000B?"SET_INTERFACE":                \
+      "UNKNOWN")
 
 #include "hub.h"
 
@@ -114,10 +124,25 @@ struct psjailb_device {
   struct usb_ep		*in_ep;
   struct usb_ep		*out_ep;
   enum PsjailbState	status;
+  int			reset_data_toggle;
   struct hub_port	hub_ports[6];
   unsigned int		current_port;
   u8			port_address[7];
 };
+
+#ifdef DBG
+#  undef DBG
+#endif
+#ifdef VDBG
+#  undef VDBG
+#endif
+#ifdef INFO
+#  undef INFO
+#endif
+#ifdef ERROR
+#  undef ERROR
+#endif
+
 
 
 #define DBG(d, fmt, args...)                    \
@@ -139,6 +164,54 @@ static struct timer_list psjailb_state_machine_timer;
   mod_timer (&psjailb_state_machine_timer, jiffies + msecs_to_jiffies(ms))
 
 static int switch_to_port_delayed = -1;
+
+
+u8 musb_get_address (struct usb_gadget *g)
+{
+  struct musb *musb = gadget_to_musb (g);
+  u8 address = 0;
+
+  if (musb)
+    address = musb_readb(musb->mregs, MUSB_FADDR);
+
+  return address;
+}
+
+void musb_set_address (struct usb_gadget *g, u8 address)
+{
+  struct musb *musb = gadget_to_musb (g);
+
+  if (musb) {
+    musb->address = address;
+    musb_writeb(musb->mregs, MUSB_FADDR, address);
+  }
+}
+
+
+void musb_reset_data_toggle (struct usb_gadget *g, struct usb_ep *ep)
+{
+  struct musb *musb = gadget_to_musb (g);
+  struct musb_ep *musb_ep = to_musb_ep(ep);
+  u8 epnum = musb_ep->current_epnum;
+  u16 csr;
+
+  dev_dbg (&g->dev, "Resetting data toggle on ep %s (%d)\n", ep->name, epnum);
+  if (musb) {
+    csr = musb_readw(musb->endpoints[epnum].regs, MUSB_TXCSR);
+    csr |= MUSB_TXCSR_CLRDATATOG;
+    musb_writew(musb->endpoints[epnum].regs, MUSB_TXCSR, csr);
+  }
+}
+
+/*
+void musb_ep_set_max_packet (struct usb_gadget *g, struct usb_ep *ep, u16 maxpacket)
+{
+  struct musb_ep *musb_ep = to_musb_ep(ep);
+
+  ep->maxpacket = maxpacket;
+  musb_ep->hw_ep->max_packet_sz_tx = maxpacket;
+  musb_ep->packet_sz = maxpacket;
+}*/
 
 #include "hub.c"
 #include "psjailb_devices.c"
@@ -181,12 +254,12 @@ static void psjailb_state_machine_timeout(unsigned long data)
       break;
     case DEVICE4_READY:
       dev->status = DEVICE5_WAIT_READY;
-      hub_reset_data_toggle (dev);
+      //dev->reset_data_toggle = 1;
       hub_connect_port (dev, 5);
       break;
     case DEVICE5_READY:
       dev->status = DEVICE3_WAIT_DISCONNECT;
-      hub_reset_data_toggle (dev);
+      //dev->reset_data_toggle = 1;
       hub_disconnect_port (dev, 3);
       break;
     case DEVICE3_DISCONNECTED:
@@ -264,7 +337,10 @@ static void psjailb_setup_complete(struct usb_ep *ep, struct usb_request *req)
   spin_lock_irqsave (&dev->lock, flags);
   if (req->status || req->actual != req->length) {
     struct psjailb_device * dev = (struct psjailb_device *) ep->driver_data;
-    DBG(dev, "%s setup complete --> %d, %d/%d\n",
+    DBG(dev, "%s setup complete FAIL --> %d, %d/%d\n",
+        STATUS_STR (dev->status), req->status, req->actual, req->length);
+  } else {
+    VDBG(dev, "%s setup complete SUCCESS --> %d, %d/%d\n",
         STATUS_STR (dev->status), req->status, req->actual, req->length);
   }
   spin_unlock_irqrestore (&dev->lock, flags);
@@ -286,11 +362,12 @@ static int psjailb_setup(struct usb_gadget *gadget,
   u16 w_index = le16_to_cpu(ctrl->wIndex);
   u16 w_value = le16_to_cpu(ctrl->wValue);
   u16 w_length = le16_to_cpu(ctrl->wLength);
-  u8 address = usb_gadget_get_address ();
+  u8 address = musb_get_address (dev->gadget);
   unsigned long flags;
+  u16 request = (ctrl->bRequestType << 8) | ctrl->bRequest;
 
   spin_lock_irqsave (&dev->lock, flags);
-  DBG (dev, "Setup called %d (%d) -- %d -- %d. Myaddr :%d\n", ctrl->bRequest,
+  VDBG (dev, "Setup called %d (%d) -- %d -- %d. Myaddr :%d\n", ctrl->bRequest,
       ctrl->bRequestType, w_value, w_index, address);
 
   req->zero = 0;
@@ -302,15 +379,14 @@ static int psjailb_setup(struct usb_gadget *gadget,
   if (address)
     dev->port_address[dev->current_port] = address;
 
-  if (dev->current_port == 0) {
-    value = hub_setup (gadget, ctrl, (ctrl->bRequestType << 8) | ctrl->bRequest,
-        w_index, w_value, w_length);
-  } else {
-    value = devices_setup (gadget, ctrl, (ctrl->bRequestType << 8) | ctrl->bRequest,
-        w_index, w_value, w_length);
-  }
+  if (dev->current_port == 0)
+    value = hub_setup (gadget, ctrl, request, w_index, w_value, w_length);
+  else
+    value = devices_setup (gadget, ctrl, request, w_index, w_value, w_length);
 
-  DBG (dev, "setup finished with value %d (w_length=%d)\n", value, w_length);
+  VDBG (dev, "setup finished with value %d (w_length=%d)\n", value, w_length);
+  DBG (dev, "%s Setup called %s (%d - %d) -> %d\n", STATUS_STR (dev->status),
+      REQUEST_STR (request), w_value, w_index, value);
 
   /* respond with data transfer before status phase? */
   if (value >= 0) {
@@ -388,7 +464,7 @@ static int __init psjailb_bind(struct usb_gadget *gadget)
   if (err < 0)
     goto fail;
 
-  VDBG(dev, "psjailb_bind finished ok\n");
+  DBG(dev, "psjailb_bind finished ok. Maxpacket: %d\n", gadget->ep0->maxpacket);
 
   setup_timer(&psjailb_state_machine_timer, psjailb_state_machine_timeout,
       (unsigned long) gadget);
