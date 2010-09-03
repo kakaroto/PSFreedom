@@ -1,4 +1,4 @@
-EXTRA_CFLAGS = -I/usr/include
+EXTRA_CFLAGS = -I/usr/include -DENABLE_MUSB_CONTROLLER
 
 obj-m	:= psfreedom.o 
 
