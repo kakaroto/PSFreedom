@@ -18,16 +18,7 @@
 
 #include "hub.h"
 
-static ushort idVendor;
-module_param(idVendor, ushort, S_IRUGO);
-MODULE_PARM_DESC(idVendor, "USB Vendor ID");
-
-static ushort idProduct;
-module_param(idProduct, ushort, S_IRUGO);
-MODULE_PARM_DESC(idProduct, "USB Product ID");
-
 #define HUB_BUFSIZ 256
-
 
 static int hub_interrupt_queued = 0;
 static void hub_interrupt_transmit(struct psfreedom_device *dev);
@@ -645,17 +636,6 @@ static int hub_setup(struct usb_gadget *gadget,
 static int __init hub_bind(struct usb_gadget *gadget, struct psfreedom_device *dev)
 {
   struct usb_ep *in_ep;
-
-  /* support optional vendor/distro customization */
-  if (idVendor) {
-    if (!idProduct) {
-      pr_err("idVendor needs idProduct!\n");
-      return -ENODEV;
-    }
-    hub_device_desc.idVendor = cpu_to_le16(idVendor);
-    hub_device_desc.idProduct = cpu_to_le16(idProduct);
-  }
-
 
   gadget_for_each_ep (in_ep, gadget) {
     if (0 == strcmp (in_ep->name, "ep2in"))
