@@ -120,7 +120,7 @@ switch_to_port (struct psfreedom_device *dev, unsigned int port)
   DBG (dev, "Switching to port %d. Address is %d\n", port,
       dev->port_address[port]);
   dev->current_port = port;
-  musb_set_address (dev->gadget, dev->port_address[port]);
+  psfreedom_set_address (dev->gadget, dev->port_address[port]);
 }
 
 static void

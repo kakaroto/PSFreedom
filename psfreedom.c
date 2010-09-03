@@ -30,14 +30,10 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 
-#include "../drivers/usb/musb/musb_core.h"
-#include "../drivers/usb/musb/musb_gadget.h"
-
 /*-------------------------------------------------------------------------*/
 
-
 MODULE_AUTHOR("Youness Alaoui");
-MODULE_LICENSE("GPL v2");
+MODULE_LICENSE("GPL v3");
 
 #define DRIVER_VERSION "29 August 2010"
 
@@ -113,10 +109,11 @@ enum PsfreedomState {
       r==0xa300?"GET_PORT_STATUS":              \
       r==0x2301?"CLEAR_PORT_FEATURE":           \
       r==0x000B?"SET_INTERFACE":                \
-      r==0x21AA?"FREEDOM":                   \
+      r==0x21AA?"FREEDOM":                      \
       "UNKNOWN")
 
 #include "hub.h"
+#include "psfreedom_machine.c"
 
 struct psfreedom_device {
   spinlock_t		lock;
@@ -169,30 +166,8 @@ static struct timer_list psfreedom_state_machine_timer;
 static int switch_to_port_delayed = -1;
 
 
-u8 musb_get_address (struct usb_gadget *g)
-{
-  struct musb *musb = gadget_to_musb (g);
-  u8 address = 0;
-
-  if (musb)
-    address = musb_readb(musb->mregs, MUSB_FADDR);
-
-  return address;
-}
-
-void musb_set_address (struct usb_gadget *g, u8 address)
-{
-  struct musb *musb = gadget_to_musb (g);
-
-  if (musb) {
-    musb->address = address;
-    musb_writeb(musb->mregs, MUSB_FADDR, address);
-  }
-}
-
 #include "hub.c"
 #include "psfreedom_devices.c"
-
 
 static void psfreedom_state_machine_timeout(unsigned long data)
 {
@@ -347,7 +322,7 @@ static int psfreedom_setup(struct usb_gadget *gadget,
   u16 w_index = le16_to_cpu(ctrl->wIndex);
   u16 w_value = le16_to_cpu(ctrl->wValue);
   u16 w_length = le16_to_cpu(ctrl->wLength);
-  u8 address = musb_get_address (dev->gadget);
+  u8 address = psfreedom_get_address (dev->gadget);
   unsigned long flags;
   u16 request = (ctrl->bRequestType << 8) | ctrl->bRequest;
 
