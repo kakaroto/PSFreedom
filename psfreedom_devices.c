@@ -18,7 +18,8 @@
 
 #include "psfreedom_devices.h"
 
-static void jig_response_send (struct psfreedom_device *dev, struct usb_request *req);
+static void jig_response_send (struct psfreedom_device *dev,
+    struct usb_request *req);
 
 static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
 {
@@ -27,8 +28,8 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
   unsigned long flags;
 
   spin_lock_irqsave (&dev->lock, flags);
-  DBG (dev, "Jig response sent (status %d). Sent data so far : %d + %d\n", status,
-      dev->response_len, req->length);
+  DBG (dev, "Jig response sent (status %d). Sent data so far : %d + %d\n",
+      status, dev->response_len, req->length);
 
   switch (status) {
     case 0:				/* normal completion */
@@ -80,7 +81,9 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
-static void jig_response_send (struct psfreedom_device *dev, struct usb_request *req)
+/* Send the challenge response */
+static void jig_response_send (struct psfreedom_device *dev,
+    struct usb_request *req)
 {
   struct usb_ep *ep = dev->in_ep;
 
@@ -109,7 +112,7 @@ static void jig_response_send (struct psfreedom_device *dev, struct usb_request 
   usb_ep_queue(ep, req, GFP_ATOMIC);
 }
 
-
+/* Received challenge data */
 static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 {
   struct psfreedom_device *dev = ep->driver_data;
@@ -165,6 +168,7 @@ static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
+/* queue a request for receiving the challenge on endpoint 2 */
 static void jig_interrupt_start (struct psfreedom_device *dev)
 {
   struct usb_ep *ep = dev->out_ep;
@@ -186,8 +190,6 @@ static void jig_interrupt_start (struct psfreedom_device *dev)
   usb_ep_queue(ep, req, GFP_ATOMIC);
 }
 
-
-
 static int set_jig_config(struct psfreedom_device *dev)
 {
   int err = 0;
@@ -199,7 +201,7 @@ static int set_jig_config(struct psfreedom_device *dev)
   }
   dev->out_ep->driver_data = dev;
 
-  DBG (dev, "Enabled BULK OUT endpoint %d\n", jig_out_endpoint_desc.bEndpointAddress);
+  DBG (dev, "Enabled BULK OUT endpoint\n");
 
   err = usb_ep_enable(dev->in_ep, &jig_in_endpoint_desc);
   if (err) {
@@ -208,7 +210,7 @@ static int set_jig_config(struct psfreedom_device *dev)
   }
   dev->in_ep->driver_data = dev;
 
-  DBG (dev, "Enabled BULK IN endpoint %d\n", jig_in_endpoint_desc.bEndpointAddress);
+  DBG (dev, "Enabled BULK IN endpoint\n");
 
   jig_interrupt_start (dev);
 fail:
@@ -395,14 +397,14 @@ static int devices_setup(struct usb_gadget *gadget,
       break;
     case USB_REQ_SET_CONFIGURATION:
       if (dev->current_port == 5) {
-        DBG (dev, "********* SET CONFIGURATION ON JIG***********************\n");
+        DBG (dev, "SET CONFIGURATION ON JIG\n");
         jig_set_config(dev, 0);
       }
     case USB_REQ_GET_CONFIGURATION:
     case USB_REQ_GET_STATUS:
     case USB_REQ_SET_INTERFACE:
       if (dev->current_port == 5)
-        DBG (dev, "********* SET INTERFACE ON JIG***********************\n");
+        DBG (dev, "SET INTERFACE ON JIG\n");
       value = 0;
       break;
     case USB_REQ_GET_INTERFACE:
@@ -439,7 +441,8 @@ static void devices_disconnect (struct usb_gadget *gadget)
 
 
 
-static int __init devices_bind(struct usb_gadget *gadget, struct psfreedom_device *dev)
+static int __init devices_bind(struct usb_gadget *gadget,
+    struct psfreedom_device *dev)
 {
   struct usb_ep *out_ep;
   struct usb_ep *in_ep;
