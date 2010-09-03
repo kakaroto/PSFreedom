@@ -57,7 +57,7 @@ static struct usb_device_descriptor hub_device_desc = {
 static struct usb_config_descriptor hub_config_desc = {
   .bLength =		USB_DT_CONFIG_SIZE,
   .bDescriptorType =	USB_DT_CONFIG,
-  .wTotalLength =         USB_DT_CONFIG_SIZE + USB_DT_INTERFACE_SIZE,
+  .wTotalLength =       USB_DT_CONFIG_SIZE + USB_DT_INTERFACE_SIZE + USB_DT_ENDPOINT_SIZE,
   .bNumInterfaces =	1,
   .bConfigurationValue =  1,
   .iConfiguration =	0,
@@ -381,9 +381,11 @@ static int hub_setup(struct usb_gadget *gadget,
           case USB_DT_CONFIG:
             memcpy(req->buf, &hub_config_desc, sizeof(hub_config_desc));
             value = sizeof(hub_config_desc);
-            memcpy (req->buf + value, &hub_interface_desc, sizeof(hub_interface_desc));
+            memcpy (req->buf + value, &hub_interface_desc,
+                sizeof(hub_interface_desc));
             value += sizeof(hub_interface_desc);
-            memcpy (req->buf + value, &hub_endpoint_desc, sizeof(hub_endpoint_desc));
+            memcpy (req->buf + value, &hub_endpoint_desc,
+                sizeof(hub_endpoint_desc));
             value += sizeof(hub_endpoint_desc);
             if (value >= 0)
               value = min(w_length, (u16)value);
