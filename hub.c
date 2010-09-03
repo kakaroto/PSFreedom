@@ -143,6 +143,8 @@ hub_connect_port (struct psjailb_device *dev, unsigned int port)
 
   switch_to_port (dev, 0);
   dev->hub_ports[port-1].status |= PORT_STAT_CONNECTION;
+  dev->hub_ports[port-1].status |= PORT_STAT_ENABLE;
+  dev->hub_ports[port-1].status |= PORT_STAT_HIGH_SPEED;
   dev->hub_ports[port-1].change |= PORT_STAT_C_CONNECTION;
   hub_port_changed (dev);
 }
