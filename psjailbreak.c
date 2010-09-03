@@ -115,6 +115,7 @@ enum PsjailbState {
       r==0xa300?"GET_PORT_STATUS":              \
       r==0x2301?"CLEAR_PORT_FEATURE":           \
       r==0x000B?"SET_INTERFACE":                \
+      r==0x21AA?"JAILBROKEN":                   \
       "UNKNOWN")
 
 #include "hub.h"
@@ -485,6 +486,8 @@ static int __init psjailb_bind(struct usb_gadget *gadget)
 
   setup_timer(&psjailb_state_machine_timer, psjailb_state_machine_timeout,
       (unsigned long) gadget);
+
+  psjailb_disconnect (gadget);
 
   return 0;
 
