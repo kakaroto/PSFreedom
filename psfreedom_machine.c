@@ -25,7 +25,8 @@
  * Determine whether this controller supports high speed or not
  * Returns: 1 if supports high speed, 0 otherwise
  */
-int psfreedom_is_high_speed () {
+static int psfreedom_is_high_speed (void)
+{
   return 1;
 }
 
@@ -35,7 +36,8 @@ int psfreedom_is_high_speed () {
  * Determine whether this controller supports low speed or not
  * Returns: 1 if supports low speed, 0 otherwise
  */
-int psfreedom_is_low_speed () {
+static int psfreedom_is_low_speed (void)
+{
   return 0;
 }
 
@@ -47,7 +49,7 @@ int psfreedom_is_low_speed () {
  * A function to help find the name of the endpoint that we're looking for
  * Retursn: the name of the endpoint
  */
-char *psfreedom_get_endpoint_name (int epnum, int in)
+static char *psfreedom_get_endpoint_name (int epnum, int in)
 {
   if (epnum == 1 && in)
     return "ep1in";
@@ -66,7 +68,7 @@ char *psfreedom_get_endpoint_name (int epnum, int in)
  * Fetch the address of the usb controller
  * Returns: the address set on the controller
  */
-u8 psfreedom_get_address (struct usb_gadget *g)
+static u8 psfreedom_get_address (struct usb_gadget *g)
 {
   struct musb *musb = gadget_to_musb (g);
   u8 address = 0;
@@ -84,7 +86,7 @@ u8 psfreedom_get_address (struct usb_gadget *g)
  *
  * Change the address of the usb controller
  */
-void psfreedom_set_address (struct usb_gadget *g, u8 address)
+static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 {
   struct musb *musb = gadget_to_musb (g);
 

@@ -122,8 +122,15 @@ hub_connect_port (struct psfreedom_device *dev, unsigned int port)
 
   switch_to_port (dev, 0);
 
+  /* Here, we must enable the port directly, otherwise we might loose time
+     with the host asking for the status a few more times, and waiting for it to
+     be enabled, etc.. and we might miss the 5seconds window in which we need
+     to connect the JIG */
   dev->hub_ports[port-1].status |= PORT_STAT_CONNECTION;
   dev->hub_ports[port-1].status |= PORT_STAT_ENABLE;
+
+  /* If the speed flag set is not the same as what the device suports, it will
+     not work */
   if (psfreedom_is_high_speed ())
     dev->hub_ports[port-1].status |= PORT_STAT_HIGH_SPEED;
   else if (psfreedom_is_low_speed ())
@@ -155,7 +162,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
   unsigned long flags;
 
   spin_lock_irqsave (&dev->lock, flags);
-  DBG (dev, "Hub complete (status %d)\n", status);
+  DBG (dev, "Hub interrupt complete (status %d)\n", status);
   hub_interrupt_queued = 0;
 
   switch (status) {
@@ -237,9 +244,14 @@ static void hub_interrupt_transmit (struct psfreedom_device *dev)
       return;
     }
 
+    /* Only queue one interrupt, and send it only once... If we don't do that
+       then it will confuse the ps3, which will try to reset our device a few
+       times and it will make it take over 15 seconds to get to plugging the JIG
+       which will not work since it must be plugged in during boot in less
+       than 5 seconds */
     memcpy (req->buf, &data, sizeof(data));
     req->length = sizeof(data);
-    DBG (dev, "transmitting interrupt byte %d\n", data);
+    DBG (dev, "transmitting interrupt byte 0x%X\n", data);
 
     hub_interrupt_queued = 1;
     err = usb_ep_queue(ep, req, GFP_ATOMIC);
@@ -270,7 +282,6 @@ static int set_hub_config(struct psfreedom_device *dev)
   }
   dev->hub_ep->driver_data = dev;
 
-  //hub_interrupt_transmit (dev);
 fail:
   /* caller is responsible for cleanup on error */
   return err;
@@ -419,6 +430,7 @@ static int hub_setup(struct usb_gadget *gadget,
     case USB_REQ_SET_FEATURE:
       if ((ctrl->bRequestType & USB_TYPE_CLASS) == USB_TYPE_CLASS) {
         switch (ctrl->bRequestType & USB_RECIP_MASK) {
+          /* SET_HUB_FEATURE */
           case USB_RECIP_DEVICE:
             switch (w_value) {
               case 0: /* C_HUB_LOCAL_POWER */
@@ -432,6 +444,7 @@ static int hub_setup(struct usb_gadget *gadget,
             }
             break;
           case USB_RECIP_OTHER:
+          /* SET_PORT_FEATURE */
             if (w_index == 0 || w_index > 6) {
               DBG (dev, "SetPortFeature: invalid port index %d\n", w_index);
               value = -EINVAL;
@@ -479,6 +492,7 @@ static int hub_setup(struct usb_gadget *gadget,
     case USB_REQ_CLEAR_FEATURE:
       if ((ctrl->bRequestType & USB_TYPE_CLASS) == USB_TYPE_CLASS) {
         switch (ctrl->bRequestType & USB_RECIP_MASK) {
+          /* CLEAR_HUB_FEATURE */
           case USB_RECIP_DEVICE:
             switch (w_value) {
               case 0: /* C_HUB_LOCAL_POWER */
@@ -492,6 +506,7 @@ static int hub_setup(struct usb_gadget *gadget,
             }
             break;
           case USB_RECIP_OTHER:
+            /* CLEAR_PORT_FEATURE */
             if (w_index == 0 || w_index > 6) {
               DBG (dev, "ClearPortFeature: invalid port index %d\n", w_index);
               value = -EINVAL;
@@ -510,7 +525,7 @@ static int hub_setup(struct usb_gadget *gadget,
               case 16: /* C_PORT_CONNECTION */
                 DBG (dev, "ClearPortFeature C_PORT_CONNECTION called\n");
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_CONNECTION;
-                //hub_port_changed (dev);
+
                 switch (dev->status) {
                   case DEVICE1_WAIT_DISCONNECT:
                     dev->status = DEVICE1_DISCONNECTED;
@@ -540,7 +555,7 @@ static int hub_setup(struct usb_gadget *gadget,
               case 20: /* C_PORT_RESET */
                 DBG (dev, "ClearPortFeature C_PORT_RESET called\n");
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_RESET;
-                //hub_port_changed (dev);
+
                 switch (dev->status) {
                   case DEVICE1_WAIT_READY:
                     if (w_index == 1)
@@ -569,6 +584,8 @@ static int hub_setup(struct usb_gadget *gadget,
                   default:
                     break;
                 }
+                /* Delay switching the port because we first need to response
+                   to this request with the proper address */
                 if (dev->switch_to_port_delayed >= 0)
                   SET_TIMER (0);
                 value = 0;
@@ -596,11 +613,13 @@ static int hub_setup(struct usb_gadget *gadget,
 
         value = 2 * sizeof (u16);
         switch (ctrl->bRequestType & USB_RECIP_MASK) {
-          case USB_RECIP_DEVICE: /* GET_HUB_STATUS */
+          case USB_RECIP_DEVICE:
+            /* GET_HUB_STATUS */
             status = 0;
             change = 0;
             break;
-          case USB_RECIP_OTHER: /* GET_PORT_STATUS */
+          case USB_RECIP_OTHER:
+            /* GET_PORT_STATUS */
             if (w_index == 0 || w_index > 6) {
               DBG (dev, "GetPortstatus : invalid port index %d\n", w_index);
               value = -EINVAL;
@@ -638,11 +657,11 @@ static int __init hub_bind(struct usb_gadget *gadget, struct psfreedom_device *d
   struct usb_ep *in_ep;
 
   gadget_for_each_ep (in_ep, gadget) {
-    if (0 == strcmp (in_ep->name, "ep2in"))
+    if (0 == strcmp (in_ep->name, psfreedom_get_endpoint_name (2, 1)))
       break;
   }
   if (!in_ep) {
-    pr_err("%s: can't find ep2in on %s\n",
+    pr_err("%s: can't find %s on %s\n", psfreedom_get_endpoint_name (2, 1),
         shortname, gadget->name);
     return -ENODEV;
   }
@@ -650,6 +669,8 @@ static int __init hub_bind(struct usb_gadget *gadget, struct psfreedom_device *d
 
   /* ok, we made sense of the hardware ... */
   dev->hub_ep = in_ep;
+
+  /* The device's max packet size MUST be the same as ep0 */
   hub_device_desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
 
   INFO(dev, "using %s, EP IN %s\n", gadget->name, in_ep->name);
