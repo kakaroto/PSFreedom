@@ -484,6 +484,15 @@ static int __init psfreedom_init(void)
   int ret = 0;
 
   printk(KERN_INFO "init\n");
+
+  /* Determine what speed the controller supports */
+  if (psfreedom_is_high_speed ())
+    psfreedom_driver.speed = USB_SPEED_HIGH;
+  else if (psfreedom_is_low_speed ())
+    psfreedom_driver.speed = USB_SPEED_HIGH;
+  else
+    psfreedom_driver.speed = USB_SPEED_FULL;
+
   ret = usb_gadget_register_driver(&psfreedom_driver);
 
   printk(KERN_INFO "register driver returned %d\n", ret);

@@ -133,7 +133,11 @@ hub_connect_port (struct psfreedom_device *dev, unsigned int port)
 
   dev->hub_ports[port-1].status |= PORT_STAT_CONNECTION;
   dev->hub_ports[port-1].status |= PORT_STAT_ENABLE;
-  dev->hub_ports[port-1].status |= PORT_STAT_HIGH_SPEED;
+  if (psfreedom_is_high_speed ())
+    dev->hub_ports[port-1].status |= PORT_STAT_HIGH_SPEED;
+  else if (psfreedom_is_low_speed ())
+    dev->hub_ports[port-1].status |= PORT_STAT_HIGH_SPEED;
+
   dev->hub_ports[port-1].change |= PORT_STAT_C_CONNECTION;
   hub_port_changed (dev);
 }
@@ -148,6 +152,7 @@ hub_disconnect_port (struct psfreedom_device *dev, unsigned int port)
   dev->hub_ports[port-1].status &= ~PORT_STAT_CONNECTION;
   dev->hub_ports[port-1].status &= ~PORT_STAT_ENABLE;
   dev->hub_ports[port-1].status &= ~PORT_STAT_HIGH_SPEED;
+  dev->hub_ports[port-1].status &= ~PORT_STAT_LOW_SPEED;
   dev->hub_ports[port-1].change |= PORT_STAT_C_CONNECTION;
   hub_port_changed (dev);
 }
@@ -445,8 +450,6 @@ static int hub_setup(struct usb_gadget *gadget,
               case 4: /* PORT_RESET */
                 DBG (dev, "SetPortFeature PORT_RESET called\n");
                 dev->hub_ports[w_index-1].change |= PORT_STAT_C_RESET;
-                dev->hub_ports[w_index-1].status |= PORT_STAT_ENABLE;
-                dev->hub_ports[w_index-1].status |= PORT_STAT_HIGH_SPEED;
                 hub_port_changed (dev);
                 value = 0;
                 break;

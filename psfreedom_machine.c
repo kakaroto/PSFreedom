@@ -19,6 +19,25 @@
 #include "../drivers/usb/musb/musb_core.h"
 #include "../drivers/usb/musb/musb_gadget.h"
 
+/**
+ * psfreedom_is_high_speed:
+ *
+ * Determine whether this controller supports high speed or not
+ * Returns: 1 if supports high speed, 0 otherwise
+ */
+int psfreedom_is_high_speed () {
+  return 1;
+}
+
+/**
+ * psfreedom_is_low_speed:
+ *
+ * Determine whether this controller supports low speed or not
+ * Returns: 1 if supports low speed, 0 otherwise
+ */
+int psfreedom_is_low_speed () {
+  return 0;
+}
 
 /**
  * psfreedom_get_endpoint_name:
