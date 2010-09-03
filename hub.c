@@ -1,7 +1,7 @@
 /*
  * hub.c -- PS3 Jailbreak exploit Gadget Driver
  *
- * Copyright (C) Youness Alaoui
+ * Copyright (C) Youness Alaoui (KaKaRoTo)
  *
  * This software is distributed under the terms of the GNU General Public
  * License ("GPL") version 2, as published by the Free Software Foundation.
