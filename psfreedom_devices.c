@@ -445,22 +445,22 @@ static int __init devices_bind(struct usb_gadget *gadget, struct psfreedom_devic
   struct usb_ep *in_ep;
 
   gadget_for_each_ep (out_ep, gadget) {
-    if (0 == strcmp (out_ep->name, "ep2out"))
+    if (0 == strcmp (out_ep->name, psfreedom_get_endpoint_name (2, 0)))
       break;
   }
   if (!out_ep) {
-    pr_err("%s: can't find ep2out on %s\n",
+    pr_err("%s: can't find %s on %s\n", psfreedom_get_endpoint_name (2, 0),
         shortname, gadget->name);
     return -ENODEV;
   }
   out_ep->driver_data = out_ep;	/* claim */
 
   gadget_for_each_ep (in_ep, gadget) {
-    if (0 == strcmp (in_ep->name, "ep1in"))
+    if (0 == strcmp (in_ep->name, psfreedom_get_endpoint_name (1, 1)))
       break;
   }
   if (!in_ep) {
-    pr_err("%s: can't find ep1in on %s\n",
+    pr_err("%s: can't find %s on %s\n", psfreedom_get_endpoint_name (1, 1),
         shortname, gadget->name);
     return -ENODEV;
   }
