@@ -88,7 +88,7 @@ static void jig_response_send (struct psjailb_device *dev, struct usb_request *r
     return;
 
   if (!req)
-    req = alloc_ep_req(ep, 64);
+    req = alloc_ep_req(ep, 8);
 
   if (!req) {
     ERROR(dev, "hub_interrupt_transmit: alloc_ep_request failed\n");
@@ -97,8 +97,8 @@ static void jig_response_send (struct psjailb_device *dev, struct usb_request *r
 
   req->complete = jig_response_complete;
 
-  memcpy (req->buf, jig_response + dev->response_len, 64);
-  req->length = 64;
+  memcpy (req->buf, jig_response + dev->response_len, 8);
+  req->length = 8;
   DBG (dev, "transmitting response. Sent so far %d\n", dev->response_len);
   DBG (dev, "Sending %X %X %X %X %X %X %X %X\n",
       ((char *)req->buf)[0], ((char *)req->buf)[1],
@@ -181,7 +181,7 @@ static void jig_interrupt_start (struct psjailb_device *dev)
   }
 
   req->complete = jig_interrupt_complete;
-  req->length = 64;
+  req->length = 8;
 
   usb_ep_queue(ep, req, GFP_ATOMIC);
 }
