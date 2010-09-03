@@ -43,6 +43,7 @@ static const char longname[] = "PS3 Jailbreak exploit";
 /* big enough to hold our biggest descriptor */
 #define USB_BUFSIZ 4000
 
+/* States for the state machine */
 enum PsfreedomState {
   INIT,
   HUB_READY,
@@ -101,6 +102,7 @@ enum PsfreedomState {
       s==DONE?"DONE":                                           \
       "UNKNOWN_STATE")
 
+/* User-friendly string for the request */
 #define REQUEST_STR(r) (                        \
       r==0x8006?"GET_DESCRIPTOR":               \
       r==0xa006?"GET_HUB_DESCRIPTOR":           \
@@ -115,23 +117,36 @@ enum PsfreedomState {
 #include "hub.h"
 #include "psfreedom_machine.c"
 
+/* Out device structure */
 struct psfreedom_device {
   spinlock_t		lock;
   struct usb_gadget	*gadget;
-  struct usb_request	*req;		/* for control responses */
+  /* for control responses */
+  struct usb_request	*req;
+  /* The hub uses a non standard ep2in */
   struct usb_ep		*hub_ep;
+  /* BULK IN for the JIG */
   struct usb_ep		*in_ep;
+  /* BULK OUT for the JIG */
   struct usb_ep		*out_ep;
+  /* status of the state machine */
   enum PsfreedomState	status;
   /* The port to switch to after a delay */
   int			switch_to_port_delayed;
+  /* Received length of the JIG challenge */
   int			challenge_len;
+  /* Sent length of the JIG response */
   int			response_len;
+  /* Hub port status/change */
   struct hub_port	hub_ports[6];
+  /* Currently enabled port on the hub (0 == hub) */
   unsigned int		current_port;
+  /* The address of all ports (0 == hub) */
   u8			port_address[7];
 };
 
+/* Undef these if it gets defined by the controller's include in
+   psfreedom_machine.c */
 #ifdef DBG
 #  undef DBG
 #endif
@@ -160,6 +175,7 @@ struct psfreedom_device {
 static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length);
 static void free_ep_req(struct usb_ep *ep, struct usb_request *req);
 
+/* Timer functions and macro to run the state machine */
 static int timer_added = 0;
 static struct timer_list psfreedom_state_machine_timer;
 #define SET_TIMER(ms) DBG (dev, "Setting timer to %dms\n", ms); \
@@ -235,7 +251,7 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       break;
     case DEVICE6_READY:
       dev->status = DONE;
-      INFO (dev, "YAHOO, worked!");
+      INFO (dev, "Congratulations, worked!");
       del_timer (&psfreedom_state_machine_timer);
       timer_added = 0;
       break;
@@ -276,6 +292,8 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
 
   spin_lock_irqsave (&dev->lock, flags);
   DBG (dev, "Got disconnected\n");
+
+  /* Reinitialize all device variables*/
   dev->challenge_len = 0;
   dev->response_len = 0;
   dev->current_port = 0;
@@ -285,10 +303,12 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
     dev->port_address[i] = 0;
   hub_disconnect (gadget);
   devices_disconnect (gadget);
-  del_timer (&psfreedom_state_machine_timer);
+  if (timer_added)
+    del_timer (&psfreedom_state_machine_timer);
   timer_added = 0;
   dev->switch_to_port_delayed = -1;
   dev->status = INIT;
+
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
@@ -335,21 +355,24 @@ static int psfreedom_setup(struct usb_gadget *gadget,
 
   req->zero = 0;
 
+  /* Enable the timer if it's not already enabled */
   if (timer_added == 0)
     add_timer (&psfreedom_state_machine_timer);
   timer_added = 1;
 
+  /* Set the address of the port */
   if (address)
     dev->port_address[dev->current_port] = address;
 
+  /* Setup the hub or the devices */
   if (dev->current_port == 0)
     value = hub_setup (gadget, ctrl, request, w_index, w_value, w_length);
   else
     value = devices_setup (gadget, ctrl, request, w_index, w_value, w_length);
 
-  VDBG (dev, "setup finished with value %d (w_length=%d)\n", value, w_length);
-  DBG (dev, "%s Setup called %s (%d - %d) -> %d\n", STATUS_STR (dev->status),
-      REQUEST_STR (request), w_value, w_index, value);
+  DBG (dev, "%s Setup called %s (%d - %d) -> %d (w_length=%d)\n",
+      STATUS_STR (dev->status),  REQUEST_STR (request), w_value, w_index,
+      value, w_length);
 
   /* respond with data transfer before status phase? */
   if (value >= 0) {
@@ -376,6 +399,10 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 
   DBG(dev, "unbind\n");
 
+  if (timer_added)
+    del_timer (&psfreedom_state_machine_timer);
+  timer_added = 0;
+
   /* we've already been disconnected ... no i/o is active */
   if (dev) {
     if (dev->req) {
@@ -399,7 +426,6 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
     return -ENOMEM;
   }
 
-
   spin_lock_init(&dev->lock);
   usb_gadget_set_selfpowered (gadget);
   dev->gadget = gadget;
@@ -412,12 +438,12 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
     goto fail;
   }
 
-  dev->current_port = 0;
   dev->req->complete = psfreedom_setup_complete;
   gadget->ep0->driver_data = dev;
 
   INFO(dev, "%s, version: " DRIVER_VERSION "\n", longname);
 
+  /* Bind the hub and devices */
   err = hub_bind (gadget, dev);
   if (err < 0)
     goto fail;
@@ -426,7 +452,7 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   if (err < 0)
     goto fail;
 
-  DBG(dev, "psfreedom_bind finished ok. Maxpacket: %d\n", gadget->ep0->maxpacket);
+  DBG(dev, "psfreedom_bind finished ok\n");
 
   setup_timer(&psfreedom_state_machine_timer, psfreedom_state_machine_timeout,
       (unsigned long) gadget);
