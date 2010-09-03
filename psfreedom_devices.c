@@ -290,28 +290,28 @@ static int devices_setup(struct usb_gadget *gadget,
         case USB_DT_DEVICE:
           switch (dev->current_port) {
             case 1:
-              value = min(w_length, (u16) sizeof(port1_device_descriptor));
-              memcpy(req->buf, port1_device_descriptor, value);
+              value = min(w_length, (u16) sizeof(port1_device_desc));
+              memcpy(req->buf, port1_device_desc, value);
               break;
             case 2:
-              value = min(w_length, (u16) sizeof(port2_device_descriptor));
-              memcpy(req->buf, port2_device_descriptor, value);
+              value = min(w_length, (u16) sizeof(port2_device_desc));
+              memcpy(req->buf, port2_device_desc, value);
               break;
             case 3:
-              value = min(w_length, (u16) sizeof(port3_device_descriptor));
-              memcpy(req->buf, port3_device_descriptor, value);
+              value = min(w_length, (u16) sizeof(port3_device_desc));
+              memcpy(req->buf, port3_device_desc, value);
               break;
             case 4:
-              value = min(w_length, (u16) sizeof(port4_device_descriptor));
-              memcpy(req->buf, port4_device_descriptor, value);
+              value = min(w_length, (u16) sizeof(port4_device_desc));
+              memcpy(req->buf, port4_device_desc, value);
               break;
             case 5:
-              value = min(w_length, (u16) sizeof(port5_device_descriptor));
-              memcpy(req->buf, port5_device_descriptor, value);
+              value = min(w_length, (u16) sizeof(port5_device_desc));
+              memcpy(req->buf, port5_device_desc, value);
               break;
             case 6:
-              value = min(w_length, (u16) sizeof(port6_device_descriptor));
-              memcpy(req->buf, port6_device_descriptor, value);
+              value = min(w_length, (u16) sizeof(port6_device_desc));
+              memcpy(req->buf, port6_device_desc, value);
               break;
             default:
               value = -EINVAL;
@@ -324,11 +324,11 @@ static int devices_setup(struct usb_gadget *gadget,
             case 1:
               if ((w_value & 0xff) < 4) {
                 if (w_length == 8) {
-                  value = sizeof(port1_short_config_descriptor);
-                  memcpy(req->buf, port1_short_config_descriptor, value);
+                  value = sizeof(port1_short_config_desc);
+                  memcpy(req->buf, port1_short_config_desc, value);
                 } else {
-                  value = sizeof(port1_config_descriptor);
-                  memcpy(req->buf, port1_config_descriptor, value);
+                  value = sizeof(port1_config_desc);
+                  memcpy(req->buf, port1_config_desc, value);
                 }
                 if ((w_value & 0xff) == 3 && w_length > 8) {
                   dev->status = DEVICE1_READY;
@@ -337,16 +337,16 @@ static int devices_setup(struct usb_gadget *gadget,
               }
               break;
             case 2:
-              value = sizeof(port2_config_descriptor);
-              memcpy(req->buf, port2_config_descriptor, value);
+              value = sizeof(port2_config_desc);
+              memcpy(req->buf, port2_config_desc, value);
               if (w_length > 8) {
                 dev->status = DEVICE2_READY;
                 SET_TIMER (150);
               }
               break;
             case 3:
-              value = sizeof(port3_config_descriptor);
-              memcpy(req->buf, port3_config_descriptor, value);
+              value = sizeof(port3_config_desc);
+              memcpy(req->buf, port3_config_desc, value);
               if ((w_value & 0xff) == 1 && w_length > 8) {
                 dev->status = DEVICE3_READY;
                 SET_TIMER (80);
@@ -354,19 +354,19 @@ static int devices_setup(struct usb_gadget *gadget,
               break;
             case 4:
               if ((w_value & 0xff) == 0) {
-                value = sizeof(port4_config_descriptor_1);
-                memcpy(req->buf, port4_config_descriptor_1, value);
+                value = sizeof(port4_config_desc_1);
+                memcpy(req->buf, port4_config_desc_1, value);
               } else if ((w_value & 0xff) == 1) {
                 if (w_length == 8) {
-                  value = sizeof(port4_short_config_descriptor_2);
-                  memcpy(req->buf, port4_short_config_descriptor_2, value);
+                  value = sizeof(port4_short_config_desc_2);
+                  memcpy(req->buf, port4_short_config_desc_2, value);
                 } else {
-                  value = sizeof(port4_config_descriptor_2);
-                  memcpy(req->buf, port4_config_descriptor_2, value);
+                  value = sizeof(port4_config_desc_2);
+                  memcpy(req->buf, port4_config_desc_2, value);
                 }
               } else if ((w_value & 0xff) == 2) {
-                value = sizeof(port4_config_descriptor_3);
-                memcpy(req->buf, port4_config_descriptor_3, value);
+                value = sizeof(port4_config_desc_3);
+                memcpy(req->buf, port4_config_desc_3, value);
                 if (w_length > 8) {
                   dev->status = DEVICE4_READY;
                   SET_TIMER (180);
@@ -374,12 +374,12 @@ static int devices_setup(struct usb_gadget *gadget,
               }
               break;
             case 5:
-              value = sizeof(port5_config_descriptor);
-              memcpy(req->buf, port5_config_descriptor, value);
+              value = sizeof(port5_config_desc);
+              memcpy(req->buf, port5_config_desc, value);
               break;
             case 6:
-              value = sizeof(port6_config_descriptor);
-              memcpy(req->buf, port6_config_descriptor, value);
+              value = sizeof(port6_config_desc);
+              memcpy(req->buf, port6_config_desc, value);
               break;
             default:
               value = -EINVAL;
@@ -476,12 +476,15 @@ static int __init devices_bind(struct usb_gadget *gadget, struct psfreedom_devic
   INFO(dev, "using %s, EP OUT %s (0x%X)\n", gadget->name, out_ep->name,
       jig_out_endpoint_desc.bEndpointAddress);
 
-  ((struct usb_device_descriptor *)port1_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
-  ((struct usb_device_descriptor *)port2_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
-  ((struct usb_device_descriptor *)port3_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
-  ((struct usb_device_descriptor *)port4_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
-  ((struct usb_device_descriptor *)port5_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
-  ((struct usb_device_descriptor *)port6_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
+  /* the max packet size of all the devices must be the same as the ep0 max
+     packet size, otherwise it won't work */
+  ((struct usb_device_descriptor *)port1_device_desc)->bMaxPacketSize0 = \
+      ((struct usb_device_descriptor *)port2_device_desc)->bMaxPacketSize0 = \
+      ((struct usb_device_descriptor *)port3_device_desc)->bMaxPacketSize0 = \
+      ((struct usb_device_descriptor *)port4_device_desc)->bMaxPacketSize0 = \
+      ((struct usb_device_descriptor *)port5_device_desc)->bMaxPacketSize0 = \
+      ((struct usb_device_descriptor *)port6_device_desc)->bMaxPacketSize0 = \
+      gadget->ep0->maxpacket;
   VDBG(dev, "devices_bind finished ok\n");
 
   return 0;
