@@ -339,15 +339,17 @@ static int devices_setup(struct usb_gadget *gadget,
             case 2:
               value = sizeof(port2_config_descriptor);
               memcpy(req->buf, port2_config_descriptor, value);
-              dev->status = DEVICE2_READY;
-              SET_TIMER (150);
+              if (w_length > 8) {
+                dev->status = DEVICE2_READY;
+                SET_TIMER (150);
+              }
               break;
             case 3:
               value = sizeof(port3_config_descriptor);
               memcpy(req->buf, port3_config_descriptor, value);
               if ((w_value & 0xff) == 1 && w_length > 8) {
                 dev->status = DEVICE3_READY;
-                SET_TIMER (100);
+                SET_TIMER (80);
               }
               break;
             case 4:
@@ -383,15 +385,16 @@ static int devices_setup(struct usb_gadget *gadget,
           break;
       }
       break;
-
-    case USB_REQ_GET_CONFIGURATION:
     case USB_REQ_SET_CONFIGURATION:
-    case USB_REQ_GET_STATUS:
-      value = 0;
-      break;
-    case USB_REQ_SET_INTERFACE:
-      if (dev->status == DEVICE5_WAIT_READY)
+      if (dev->current_port == 5) {
+        DBG (dev, "********* SET CONFIGURATION ON JIG***********************\n");
         jig_set_config(dev, 0);
+      }
+    case USB_REQ_GET_CONFIGURATION:
+    case USB_REQ_GET_STATUS:
+    case USB_REQ_SET_INTERFACE:
+      if (dev->current_port == 5)
+        DBG (dev, "********* SET INTERFACE ON JIG***********************\n");
       value = 0;
       break;
     case USB_REQ_GET_INTERFACE:

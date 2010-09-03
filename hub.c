@@ -552,7 +552,7 @@ static int hub_setup(struct usb_gadget *gadget,
                     break;
                   case DEVICE2_WAIT_DISCONNECT:
                     dev->status = DEVICE2_DISCONNECTED;
-                    SET_TIMER (150);
+                    SET_TIMER (170);
                     break;
                   case DEVICE3_WAIT_DISCONNECT:
                     dev->status = DEVICE3_DISCONNECTED;
@@ -574,36 +574,37 @@ static int hub_setup(struct usb_gadget *gadget,
               case 20: /* C_PORT_RESET */
                 DBG (dev, "ClearPortFeature C_PORT_RESET called\n");
                 dev->hub_ports[w_index-1].change &= ~PORT_STAT_C_RESET;
-                hub_port_changed (dev);
+                //hub_port_changed (dev);
                 switch (dev->status) {
                   case DEVICE1_WAIT_READY:
                     if (w_index == 1)
                       switch_to_port_delayed = w_index;
-                    SET_TIMER (0);
                     break;
                   case DEVICE2_WAIT_READY:
                     if (w_index == 2)
                       switch_to_port_delayed = w_index;
-                    SET_TIMER (0);
                     break;
                   case DEVICE3_WAIT_READY:
                     if (w_index == 3)
                       switch_to_port_delayed = w_index;
-                    SET_TIMER (0);
                     break;
                   case DEVICE4_WAIT_READY:
                     if (w_index == 4)
                       switch_to_port_delayed = w_index;
-                    SET_TIMER (0);
                     break;
                   case DEVICE5_WAIT_READY:
                     if (w_index == 5)
                       switch_to_port_delayed = w_index;
-                    SET_TIMER (0);
+                    break;
+                  case DEVICE6_WAIT_READY:
+                    if (w_index == 6)
+                      switch_to_port_delayed = w_index;
                     break;
                   default:
                     break;
                 }
+                if (switch_to_port_delayed >= 0)
+                  SET_TIMER (0);
                 value = 0;
                 break;
               case 17: /* C_PORT_ENABLE */
