@@ -1,5 +1,5 @@
 /*
- * psjailbreak_devices.h -- PS3 Jailbreak exploit Gadget Driver
+ * psfreedom_devices.h -- PS3 Jailbreak exploit Gadget Driver
  *
  * Copyright (C) Youness Alaoui
  *

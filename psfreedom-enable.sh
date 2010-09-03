@@ -42,14 +42,14 @@ if [ $? = 0 ]; then
     fi
 fi
 
-/sbin/lsmod | grep psjailbreak > /dev/null                         
+/sbin/lsmod | grep psfreedom > /dev/null                         
 if [ $? != 0 ]; then                                         
-    insmod psjailbreak.ko
+    insmod psfreedom.ko
     RC=$?                                    
 fi                                                                   
                                                             
 if [ $RC != 0 ]; then                                              
-    logger "$0: failed to install psjailbreak module"                      
+    logger "$0: failed to install psfreedom module"                      
     exit 1                                                      
 fi                                                              
                                

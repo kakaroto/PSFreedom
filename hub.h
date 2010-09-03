@@ -1,18 +1,15 @@
 /*
- * <linux/usb/audio.h> -- USB Audio definitions.
+ * hub.h -- USB HUB definitions.
  *
- * Copyright (C) 2006 Thumtronics Pty Ltd.
- * Developed for Thumtronics by Grey Innovation
- * Ben Williamson <ben.williamson@greyinnovation.com>
+ * Copyright (C) Youness Alaoui
  *
  * This software is distributed under the terms of the GNU General Public
  * License ("GPL") version 2, as published by the Free Software Foundation.
  *
  * This file holds USB constants and structures defined
- * by the USB Device Class Definition for Audio Devices.
+ * by the USB Device Class Definition for HUB Devices.
  * Comments below reference relevant sections of that document:
  *
- * http://www.usb.org/developers/devclass_docs/audio10.pdf
  */
 
 #ifndef __LINUX_USB_HUB_H
