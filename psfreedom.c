@@ -30,8 +30,6 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 
-#include "../drivers/usb/gadget/epautoconf.c"
-#include "../drivers/usb/gadget/config.c"
 #include "../drivers/usb/musb/musb_core.h"
 #include "../drivers/usb/musb/musb_gadget.h"
 
@@ -441,8 +439,6 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   gadget->ep0->driver_data = dev;
 
   INFO(dev, "%s, version: " DRIVER_VERSION "\n", longname);
-
-  usb_ep_autoconfig_reset(gadget);
 
   err = hub_bind (gadget, dev);
   if (err < 0)

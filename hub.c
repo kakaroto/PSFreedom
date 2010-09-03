@@ -108,11 +108,6 @@ static const struct usb_hub_header_descriptor hub_header_desc = {
   .PortPwrCtrlMask = 0xFF,
 };
 
-static const struct usb_descriptor_header *hub_function [] = {
-	(struct usb_descriptor_header *)&hub_interface_desc,
-	(struct usb_descriptor_header *)&hub_endpoint_desc,
-	NULL,
-};
 
 static void hub_port_changed (struct psfreedom_device *dev);
 
@@ -155,24 +150,6 @@ hub_disconnect_port (struct psfreedom_device *dev, unsigned int port)
   dev->hub_ports[port-1].status &= ~PORT_STAT_HIGH_SPEED;
   dev->hub_ports[port-1].change |= PORT_STAT_C_CONNECTION;
   hub_port_changed (dev);
-}
-
-static int hub_config_buf(struct usb_gadget *gadget,
-		u8 *buf, u8 type, unsigned index)
-{
-	int len;
-
-	/* only one configuration */
-	if (index != 0) {
-		return -EINVAL;
-	}
-	len = usb_gadget_config_buf(&hub_config_desc,
-			buf, USB_BUFSIZ, hub_function);
-	if (len < 0) {
-		return len;
-	}
-	((struct usb_config_descriptor *)buf)->bDescriptorType = type;
-	return len;
 }
 
 static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
@@ -395,9 +372,12 @@ static int hub_setup(struct usb_gadget *gadget,
             memcpy(req->buf, &hub_device_desc, value);
             break;
           case USB_DT_CONFIG:
-            value = 0;
-            value = hub_config_buf(gadget, req->buf, w_value >> 8,
-                w_value & 0xff);
+            memcpy(req->buf, &hub_config_desc, sizeof(hub_config_desc));
+            value = sizeof(hub_config_desc);
+            memcpy (req->buf + value, &hub_interface_desc, sizeof(hub_interface_desc));
+            value += sizeof(hub_interface_desc);
+            memcpy (req->buf + value, &hub_endpoint_desc, sizeof(hub_endpoint_desc));
+            value += sizeof(hub_endpoint_desc);
             if (value >= 0)
               value = min(w_length, (u16)value);
             break;
