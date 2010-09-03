@@ -357,24 +357,32 @@ static int devices_setup(struct usb_gadget *gadget,
                 value = sizeof(port4_config_descriptor_1);
                 memcpy(req->buf, port4_config_descriptor_1, value);
               } else if ((w_value & 0xff) == 1) {
-                value = sizeof(port4_config_descriptor_2);
-                memcpy(req->buf, port4_config_descriptor_2, value);
+                if (w_length == 8) {
+                  value = sizeof(port4_short_config_descriptor_2);
+                  memcpy(req->buf, port4_short_config_descriptor_2, value);
+                } else {
+                  value = sizeof(port4_config_descriptor_2);
+                  memcpy(req->buf, port4_config_descriptor_2, value);
+                }
               } else if ((w_value & 0xff) == 2) {
                 value = sizeof(port4_config_descriptor_3);
                 memcpy(req->buf, port4_config_descriptor_3, value);
                 if (w_length > 8) {
                   dev->status = DEVICE4_READY;
-                  SET_TIMER (200);
+                  SET_TIMER (180);
                 }
               }
+              break;
             case 5:
               value = sizeof(port5_config_descriptor);
               memcpy(req->buf, port5_config_descriptor, value);
               break;
-            default:
-              value = -EINVAL;
+            case 6:
               value = sizeof(port6_config_descriptor);
               memcpy(req->buf, port6_config_descriptor, value);
+              break;
+            default:
+              value = -EINVAL;
               break;
           }
           if (value >= 0)
