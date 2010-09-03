@@ -128,7 +128,6 @@ struct psfreedom_device {
   struct usb_ep		*in_ep;
   struct usb_ep		*out_ep;
   enum PsfreedomState	status;
-  int			reset_data_toggle;
   int			challenge_len;
   int			response_len;
   struct hub_port	hub_ports[6];
@@ -193,32 +192,6 @@ void musb_set_address (struct usb_gadget *g, u8 address)
   }
 }
 
-
-void musb_reset_data_toggle (struct usb_gadget *g, struct usb_ep *ep)
-{
-  struct musb *musb = gadget_to_musb (g);
-  struct musb_ep *musb_ep = to_musb_ep(ep);
-  u8 epnum = musb_ep->current_epnum;
-  u16 csr;
-
-  dev_dbg (&g->dev, "Resetting data toggle on ep %s (%d)\n", ep->name, epnum);
-  if (musb) {
-    csr = musb_readw(musb->endpoints[epnum].regs, MUSB_TXCSR);
-    csr |= MUSB_TXCSR_CLRDATATOG;
-    musb_writew(musb->endpoints[epnum].regs, MUSB_TXCSR, csr);
-  }
-}
-
-/*
-void musb_ep_set_max_packet (struct usb_gadget *g, struct usb_ep *ep, u16 maxpacket)
-{
-  struct musb_ep *musb_ep = to_musb_ep(ep);
-
-  ep->maxpacket = maxpacket;
-  musb_ep->hw_ep->max_packet_sz_tx = maxpacket;
-  musb_ep->packet_sz = maxpacket;
-}*/
-
 #include "hub.c"
 #include "psfreedom_devices.c"
 
@@ -260,7 +233,6 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       break;
     case DEVICE4_READY:
       dev->status = DEVICE5_WAIT_READY;
-      //dev->reset_data_toggle = 1;
       hub_connect_port (dev, 5);
       break;
     case DEVICE5_CHALLENGED:
@@ -268,7 +240,6 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       break;
     case DEVICE5_READY:
       dev->status = DEVICE3_WAIT_DISCONNECT;
-      //dev->reset_data_toggle = 1;
       hub_disconnect_port (dev, 3);
       break;
     case DEVICE3_DISCONNECTED:
@@ -333,7 +304,6 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
   dev->challenge_len = 0;
   dev->response_len = 0;
   dev->current_port = 0;
-  dev->reset_data_toggle = 0;
   for (i = 0; i < 6; i++)
     dev->hub_ports[i].status = dev->hub_ports[i].change = 0;
   for (i = 0; i < 7; i++)
