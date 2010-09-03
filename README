@@ -1,0 +1,13 @@
+PSFreedom - PS3 Jailbreak linux kernel
+by KaKaRoTo
+
+----
+This linux kernel module should work on the N900 (RX51 machine).
+It uses the musb driver to access the address of the usb and modify it.
+
+If you want to port this, have a look at psfreedom_machine.c and implement the
+missing functions for your device. Make it compile-time #ifdef and modify
+the Makefile.
+
+To compile, type 'make' inside scratchbox.
+
