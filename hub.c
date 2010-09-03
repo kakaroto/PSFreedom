@@ -136,10 +136,6 @@ hub_connect_port (struct psfreedom_device *dev, unsigned int port)
 
   switch_to_port (dev, 0);
 
-  if (dev->reset_data_toggle == 1)
-    musb_reset_data_toggle (dev->gadget, dev->hub_ep);
-  dev->reset_data_toggle = 0;
-
   dev->hub_ports[port-1].status |= PORT_STAT_CONNECTION;
   dev->hub_ports[port-1].status |= PORT_STAT_ENABLE;
   dev->hub_ports[port-1].status |= PORT_STAT_HIGH_SPEED;
@@ -152,10 +148,6 @@ hub_disconnect_port (struct psfreedom_device *dev, unsigned int port)
 {
   if (port == 0 || port > 6)
     return;
-
-  if (dev->reset_data_toggle == 1)
-    musb_reset_data_toggle (dev->gadget, dev->hub_ep);
-  dev->reset_data_toggle = 0;
 
   switch_to_port (dev, 0);
   dev->hub_ports[port-1].status &= ~PORT_STAT_CONNECTION;
