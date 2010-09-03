@@ -69,6 +69,7 @@ enum PsjailbState {
   DEVICE4_WAIT_DISCONNECT,
   DEVICE4_DISCONNECTED,
   DEVICE5_WAIT_READY,
+  DEVICE5_CHALLENGED,
   DEVICE5_READY,
   DEVICE5_WAIT_DISCONNECT,
   DEVICE5_DISCONNECTED,
@@ -97,6 +98,7 @@ enum PsjailbState {
       s==DEVICE4_WAIT_DISCONNECT?"DEVICE4_WAIT_DISCONNECT":     \
       s==DEVICE4_DISCONNECTED?"DEVICE4_DISCONNECTED":           \
       s==DEVICE5_WAIT_READY?"DEVICE5_WAIT_READY":               \
+      s==DEVICE5_CHALLENGED?"DEVICE5_CHALLENGED":               \
       s==DEVICE5_READY?"DEVICE5_READY":                         \
       s==DEVICE5_WAIT_DISCONNECT?"DEVICE5_WAIT_DISCONNECT":     \
       s==DEVICE5_DISCONNECTED?"DEVICE5_DISCONNECTED":           \
@@ -121,10 +123,13 @@ struct psjailb_device {
   spinlock_t		lock;
   struct usb_gadget	*gadget;
   struct usb_request	*req;		/* for control responses */
+  struct usb_ep		*hub_ep;
   struct usb_ep		*in_ep;
   struct usb_ep		*out_ep;
   enum PsjailbState	status;
   int			reset_data_toggle;
+  int			challenge_len;
+  int			response_len;
   struct hub_port	hub_ports[6];
   unsigned int		current_port;
   u8			port_address[7];
@@ -257,6 +262,9 @@ static void psjailb_state_machine_timeout(unsigned long data)
       //dev->reset_data_toggle = 1;
       hub_connect_port (dev, 5);
       break;
+    case DEVICE5_CHALLENGED:
+      jig_response_send (dev, NULL);
+      break;
     case DEVICE5_READY:
       dev->status = DEVICE3_WAIT_DISCONNECT;
       //dev->reset_data_toggle = 1;
@@ -317,10 +325,18 @@ static void psjailb_disconnect (struct usb_gadget *gadget)
 {
   struct psjailb_device *dev = get_gadget_data (gadget);
   unsigned long flags;
+  int i;
 
   spin_lock_irqsave (&dev->lock, flags);
   DBG (dev, "Got disconnected\n");
+  dev->challenge_len = 0;
+  dev->response_len = 0;
   dev->current_port = 0;
+  dev->reset_data_toggle = 0;
+  for (i = 0; i < 6; i++)
+    dev->hub_ports[i].status = dev->hub_ports[i].change = 0;
+  for (i = 0; i < 7; i++)
+    dev->port_address[i] = 0;
   hub_disconnect (gadget);
   devices_disconnect (gadget);
   del_timer (&psjailb_state_machine_timer);

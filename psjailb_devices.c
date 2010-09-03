@@ -18,6 +18,98 @@
 
 #include "psjailb_devices.h"
 
+static void jig_response_send (struct psjailb_device *dev, struct usb_request *req);
+
+static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
+{
+  struct psjailb_device *dev = ep->driver_data;
+  int status = req->status;
+  unsigned long flags;
+
+  spin_lock_irqsave (&dev->lock, flags);
+  DBG (dev, "Jig response sent (status %d). Sent data so far : %d + %d\n", status,
+      dev->response_len, req->length);
+
+  switch (status) {
+    case 0:				/* normal completion */
+      if (ep == dev->in_ep) {
+        /* our transmit completed.
+           see if there's more to go.
+           hub_transmit eats req, don't queue it again. */
+        dev->response_len += req->length;
+        if (dev->response_len < 64) {
+          jig_response_send (dev, req);
+        } else {
+          dev->status = DEVICE5_READY;
+          SET_TIMER (150);
+        }
+        spin_unlock_irqrestore (&dev->lock, flags);
+        return;
+      }
+      break;
+
+      /* this endpoint is normally active while we're configured */
+    case -ECONNABORTED:		/* hardware forced ep reset */
+    case -ESHUTDOWN:		/* disconnect from host */
+      VDBG(dev, "%s gone (%d), %d/%d\n", ep->name, status,
+          req->actual, req->length);
+    case -ECONNRESET:		/* request dequeued */
+      hub_interrupt_queued = 0;
+      spin_unlock_irqrestore (&dev->lock, flags);
+      return;
+
+    case -EOVERFLOW:		/* buffer overrun on read means that
+                                 * we didn't provide a big enough
+                                 * buffer.
+                                 */
+    default:
+      DBG(dev, "%s complete --> %d, %d/%d\n", ep->name,
+          status, req->actual, req->length);
+      break;
+    case -EREMOTEIO:		/* short read */
+      break;
+  }
+
+  status = usb_ep_queue(ep, req, GFP_ATOMIC);
+  if (status) {
+    ERROR(dev, "kill %s:  resubmit %d bytes --> %d\n",
+        ep->name, req->length, status);
+    usb_ep_set_halt(ep);
+    /* FIXME recover later ... somehow */
+  }
+  spin_unlock_irqrestore (&dev->lock, flags);
+}
+
+static void jig_response_send (struct psjailb_device *dev, struct usb_request *req)
+{
+  struct usb_ep *ep = dev->in_ep;
+
+  if (!ep)
+    return;
+
+  if (!req)
+    req = alloc_ep_req(ep, 64);
+
+  if (!req) {
+    ERROR(dev, "hub_interrupt_transmit: alloc_ep_request failed\n");
+    return;
+  }
+
+  req->complete = jig_response_complete;
+
+  memcpy (req->buf, jig_response + dev->response_len, 64);
+  req->length = 64;
+  DBG (dev, "transmitting response. Sent so far %d\n", dev->response_len);
+  DBG (dev, "Sending %X %X %X %X %X %X %X %X\n",
+      ((char *)req->buf)[0], ((char *)req->buf)[1],
+      ((char *)req->buf)[2], ((char *)req->buf)[3],
+      ((char *)req->buf)[4], ((char *)req->buf)[5],
+      ((char *)req->buf)[6], ((char *)req->buf)[7]);
+
+  usb_ep_queue(ep, req, GFP_ATOMIC);
+}
+
+
 static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 {
   struct psjailb_device *dev = ep->driver_data;
@@ -25,13 +117,20 @@ static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
   unsigned long flags;
 
   spin_lock_irqsave (&dev->lock, flags);
-  DBG (dev, "Out interrupt complete (status %d) : length %d\n", status, req->length);
+  DBG (dev, "******Out interrupt complete (status %d) : length %d, actual %d\n",
+      status, req->length, req->actual);
 
   switch (status) {
     case 0:				/* normal completion */
       if (ep == dev->out_ep) {
         /* our transmit completed */
         /* TODO handle data */
+        dev->challenge_len += req->actual;
+        DBG (dev, "******Challenge length : %d\n", dev->challenge_len);
+        if (dev->challenge_len >= 64) {
+          dev->status = DEVICE5_CHALLENGED;
+          SET_TIMER (450);
+        }
       }
       break;
 
@@ -82,7 +181,7 @@ static void jig_interrupt_start (struct psjailb_device *dev)
   }
 
   req->complete = jig_interrupt_complete;
-  req->length = 0;
+  req->length = 64;
 
   usb_ep_queue(ep, req, GFP_ATOMIC);
 }
@@ -93,12 +192,23 @@ static int set_jig_config(struct psjailb_device *dev)
 {
   int err = 0;
 
-  err = usb_ep_enable(dev->out_ep, &jig_endpoint_desc);
+  err = usb_ep_enable(dev->out_ep, &jig_out_endpoint_desc);
   if (err) {
     ERROR(dev, "can't start %s: %d\n", dev->out_ep->name, err);
     goto fail;
   }
   dev->out_ep->driver_data = dev;
+
+  DBG (dev, "Enabled BULK OUT endpoint %d\n", jig_out_endpoint_desc.bEndpointAddress);
+
+  err = usb_ep_enable(dev->in_ep, &jig_in_endpoint_desc);
+  if (err) {
+    ERROR(dev, "can't start %s: %d\n", dev->in_ep->name, err);
+    goto fail;
+  }
+  dev->in_ep->driver_data = dev;
+
+  DBG (dev, "Enabled BULK IN endpoint %d\n", jig_in_endpoint_desc.bEndpointAddress);
 
   jig_interrupt_start (dev);
 fail:
@@ -111,6 +221,7 @@ jig_reset_config(struct psjailb_device *dev)
 {
   DBG(dev, "JIG reset config\n");
   usb_ep_disable(dev->out_ep);
+  usb_ep_disable(dev->in_ep);
 }
 
 /* change our operational config.  this code must agree with the code
@@ -314,20 +425,46 @@ static void devices_disconnect (struct usb_gadget *gadget)
 static int __init devices_bind(struct usb_gadget *gadget, struct psjailb_device *dev)
 {
   struct usb_ep *out_ep;
+  struct usb_ep *in_ep;
 
-  out_ep = usb_ep_autoconfig(gadget, &jig_endpoint_desc);
+  gadget_for_each_ep (out_ep, gadget) {
+    if (0 == strcmp (out_ep->name, "ep2out"))
+      break;
+  }
   if (!out_ep) {
-    pr_err("%s: can't autoconfigure on %s\n",
+    pr_err("%s: can't find ep2out on %s\n",
         shortname, gadget->name);
     return -ENODEV;
   }
   out_ep->driver_data = out_ep;	/* claim */
 
+  gadget_for_each_ep (in_ep, gadget) {
+    if (0 == strcmp (in_ep->name, "ep1in"))
+      break;
+  }
+  if (!in_ep) {
+    pr_err("%s: can't find ep1in on %s\n",
+        shortname, gadget->name);
+    return -ENODEV;
+  }
+  in_ep->driver_data = in_ep;	/* claim */
+
   /* ok, we made sense of the hardware ... */
+  dev->in_ep = in_ep;
   dev->out_ep = out_ep;
 
-  INFO(dev, "using %s, EP OUT %s\n", gadget->name, out_ep->name);
 
+  INFO(dev, "using %s, EP IN %s (0x%X)\n", gadget->name, in_ep->name,
+      jig_in_endpoint_desc.bEndpointAddress);
+  INFO(dev, "using %s, EP OUT %s (0x%X)\n", gadget->name, out_ep->name,
+      jig_out_endpoint_desc.bEndpointAddress);
+
+  ((struct usb_device_descriptor *)port1_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
+  ((struct usb_device_descriptor *)port2_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
+  ((struct usb_device_descriptor *)port3_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
+  ((struct usb_device_descriptor *)port4_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
+  ((struct usb_device_descriptor *)port5_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
+  ((struct usb_device_descriptor *)port6_device_descriptor)->bMaxPacketSize0 = gadget->ep0->maxpacket;
   VDBG(dev, "devices_bind finished ok\n");
 
   return 0;

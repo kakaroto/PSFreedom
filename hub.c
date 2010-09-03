@@ -90,7 +90,7 @@ static const struct usb_interface_descriptor hub_interface_desc = {
 static struct usb_endpoint_descriptor hub_endpoint_desc = {
   .bLength =		USB_DT_ENDPOINT_SIZE,
   .bDescriptorType =	USB_DT_ENDPOINT,
-  .bEndpointAddress =	USB_DIR_IN,
+  .bEndpointAddress =	USB_DIR_IN | 0x02,
   .bmAttributes =	USB_ENDPOINT_XFER_INT,
   .wMaxPacketSize =	__constant_cpu_to_le16(8),
   .bInterval =		12,	// frames -> 32 ms
@@ -137,7 +137,7 @@ hub_connect_port (struct psjailb_device *dev, unsigned int port)
   switch_to_port (dev, 0);
 
   if (dev->reset_data_toggle == 1)
-    musb_reset_data_toggle (dev->gadget, dev->in_ep);
+    musb_reset_data_toggle (dev->gadget, dev->hub_ep);
   dev->reset_data_toggle = 0;
 
   dev->hub_ports[port-1].status |= PORT_STAT_CONNECTION;
@@ -154,7 +154,7 @@ hub_disconnect_port (struct psjailb_device *dev, unsigned int port)
     return;
 
   if (dev->reset_data_toggle == 1)
-    musb_reset_data_toggle (dev->gadget, dev->in_ep);
+    musb_reset_data_toggle (dev->gadget, dev->hub_ep);
   dev->reset_data_toggle = 0;
 
   switch_to_port (dev, 0);
@@ -195,7 +195,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 
   switch (status) {
     case 0:				/* normal completion */
-      if (ep == dev->in_ep) {
+      if (ep == dev->hub_ep) {
         /* our transmit completed.
            see if there's more to go.
            hub_transmit eats req, don't queue it again. */
@@ -241,7 +241,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 
 static void hub_interrupt_transmit (struct psjailb_device *dev)
 {
-  struct usb_ep *ep = dev->in_ep;
+  struct usb_ep *ep = dev->hub_ep;
   static struct usb_request *req = NULL;
   u8 data = 0;
   int i;
@@ -298,12 +298,12 @@ static int set_hub_config(struct psjailb_device *dev)
   int err = 0;
 
   hub_interrupt_queued = 0;
-  err = usb_ep_enable(dev->in_ep, &hub_endpoint_desc);
+  err = usb_ep_enable(dev->hub_ep, &hub_endpoint_desc);
   if (err) {
-    ERROR(dev, "can't start %s: %d\n", dev->in_ep->name, err);
+    ERROR(dev, "can't start %s: %d\n", dev->hub_ep->name, err);
     goto fail;
   }
-  dev->in_ep->driver_data = dev;
+  dev->hub_ep->driver_data = dev;
 
   //hub_interrupt_transmit (dev);
 fail:
@@ -315,7 +315,7 @@ static void
 hub_reset_config(struct psjailb_device *dev)
 {
   DBG(dev, "reset config\n");
-  usb_ep_disable(dev->in_ep);
+  usb_ep_disable(dev->hub_ep);
   hub_interrupt_queued = 0;
 
 }
@@ -339,7 +339,7 @@ hub_set_config(struct psjailb_device *dev, unsigned number)
   hub_reset_config(dev);
   result = set_hub_config(dev);
 
-  if (!result && !dev->in_ep) {
+  if (!result && !dev->hub_ep) {
     result = -ENODEV;
   }
   if (result) {
@@ -680,16 +680,20 @@ static int __init hub_bind(struct usb_gadget *gadget, struct psjailb_device *dev
     hub_device_desc.idProduct = cpu_to_le16(idProduct);
   }
 
-  in_ep = usb_ep_autoconfig(gadget, &hub_endpoint_desc);
+
+  gadget_for_each_ep (in_ep, gadget) {
+    if (0 == strcmp (in_ep->name, "ep2in"))
+      break;
+  }
   if (!in_ep) {
-    pr_err("%s: can't autoconfigure on %s\n",
+    pr_err("%s: can't find ep2in on %s\n",
         shortname, gadget->name);
     return -ENODEV;
   }
   in_ep->driver_data = in_ep;	/* claim */
 
   /* ok, we made sense of the hardware ... */
-  dev->in_ep = in_ep;
+  dev->hub_ep = in_ep;
   hub_device_desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
 
   INFO(dev, "using %s, EP IN %s\n", gadget->name, in_ep->name);
