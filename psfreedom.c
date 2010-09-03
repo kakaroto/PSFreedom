@@ -1,5 +1,5 @@
 /*
- * psjailbreak.c -- PS3 Jailbreak exploit Gadget Driver
+ * psfreedom.c -- PS3 Jailbreak exploit Gadget Driver
  *
  * Copyright (C) Youness Alaoui
  *
@@ -43,13 +43,13 @@ MODULE_LICENSE("GPL v2");
 
 #define DRIVER_VERSION "29 August 2010"
 
-static const char shortname[] = "ps3jailbreak";
+static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
 /* big enough to hold our biggest descriptor */
 #define USB_BUFSIZ 4000
 
-enum PsjailbState {
+enum PsfreedomState {
   INIT,
   HUB_READY,
   DEVICE1_WAIT_READY,
@@ -115,19 +115,19 @@ enum PsjailbState {
       r==0xa300?"GET_PORT_STATUS":              \
       r==0x2301?"CLEAR_PORT_FEATURE":           \
       r==0x000B?"SET_INTERFACE":                \
-      r==0x21AA?"JAILBROKEN":                   \
+      r==0x21AA?"FREEDOM":                   \
       "UNKNOWN")
 
 #include "hub.h"
 
-struct psjailb_device {
+struct psfreedom_device {
   spinlock_t		lock;
   struct usb_gadget	*gadget;
   struct usb_request	*req;		/* for control responses */
   struct usb_ep		*hub_ep;
   struct usb_ep		*in_ep;
   struct usb_ep		*out_ep;
-  enum PsjailbState	status;
+  enum PsfreedomState	status;
   int			reset_data_toggle;
   int			challenge_len;
   int			response_len;
@@ -165,9 +165,9 @@ static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length);
 static void free_ep_req(struct usb_ep *ep, struct usb_request *req);
 
 static int timer_added = 0;
-static struct timer_list psjailb_state_machine_timer;
+static struct timer_list psfreedom_state_machine_timer;
 #define SET_TIMER(ms) DBG (dev, "Setting timer to %dms\n", ms); \
-  mod_timer (&psjailb_state_machine_timer, jiffies + msecs_to_jiffies(ms))
+  mod_timer (&psfreedom_state_machine_timer, jiffies + msecs_to_jiffies(ms))
 
 static int switch_to_port_delayed = -1;
 
@@ -220,13 +220,13 @@ void musb_ep_set_max_packet (struct usb_gadget *g, struct usb_ep *ep, u16 maxpac
 }*/
 
 #include "hub.c"
-#include "psjailb_devices.c"
+#include "psfreedom_devices.c"
 
 
-static void psjailb_state_machine_timeout(unsigned long data)
+static void psfreedom_state_machine_timeout(unsigned long data)
 {
   struct usb_gadget *gadget = (struct usb_gadget *)data;
-  struct psjailb_device *dev = get_gadget_data (gadget);
+  struct psfreedom_device *dev = get_gadget_data (gadget);
   unsigned long flags;
 
   spin_lock_irqsave (&dev->lock, flags);
@@ -290,7 +290,7 @@ static void psjailb_state_machine_timeout(unsigned long data)
     case DEVICE6_READY:
       dev->status = DONE;
       INFO (dev, "YAHOO, worked!");
-      del_timer (&psjailb_state_machine_timer);
+      del_timer (&psfreedom_state_machine_timer);
       timer_added = 0;
       break;
     default:
@@ -322,9 +322,9 @@ static void free_ep_req(struct usb_ep *ep, struct usb_request *req)
   usb_ep_free_request(ep, req);
 }
 
-static void psjailb_disconnect (struct usb_gadget *gadget)
+static void psfreedom_disconnect (struct usb_gadget *gadget)
 {
-  struct psjailb_device *dev = get_gadget_data (gadget);
+  struct psfreedom_device *dev = get_gadget_data (gadget);
   unsigned long flags;
   int i;
 
@@ -340,20 +340,20 @@ static void psjailb_disconnect (struct usb_gadget *gadget)
     dev->port_address[i] = 0;
   hub_disconnect (gadget);
   devices_disconnect (gadget);
-  del_timer (&psjailb_state_machine_timer);
+  del_timer (&psfreedom_state_machine_timer);
   timer_added = 0;
   dev->status = INIT;
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
-static void psjailb_setup_complete(struct usb_ep *ep, struct usb_request *req)
+static void psfreedom_setup_complete(struct usb_ep *ep, struct usb_request *req)
 {
-  struct psjailb_device *dev = ep->driver_data;
+  struct psfreedom_device *dev = ep->driver_data;
   unsigned long flags;
 
   spin_lock_irqsave (&dev->lock, flags);
   if (req->status || req->actual != req->length) {
-    struct psjailb_device * dev = (struct psjailb_device *) ep->driver_data;
+    struct psfreedom_device * dev = (struct psfreedom_device *) ep->driver_data;
     DBG(dev, "%s setup complete FAIL --> %d, %d/%d\n",
         STATUS_STR (dev->status), req->status, req->actual, req->length);
   } else {
@@ -370,10 +370,10 @@ static void psjailb_setup_complete(struct usb_ep *ep, struct usb_request *req)
  * housekeeping for the gadget function we're implementing.  Most of
  * the work is in config-specific setup.
  */
-static int psjailb_setup(struct usb_gadget *gadget,
+static int psfreedom_setup(struct usb_gadget *gadget,
     const struct usb_ctrlrequest *ctrl)
 {
-  struct psjailb_device *dev = get_gadget_data(gadget);
+  struct psfreedom_device *dev = get_gadget_data(gadget);
   struct usb_request *req = dev->req;
   int value = -EOPNOTSUPP;
   u16 w_index = le16_to_cpu(ctrl->wIndex);
@@ -390,7 +390,7 @@ static int psjailb_setup(struct usb_gadget *gadget,
   req->zero = 0;
 
   if (timer_added == 0)
-    add_timer (&psjailb_state_machine_timer);
+    add_timer (&psfreedom_state_machine_timer);
   timer_added = 1;
 
   if (address)
@@ -414,7 +414,7 @@ static int psjailb_setup(struct usb_gadget *gadget,
       DBG(dev, "ep_queue --> %d\n", value);
       req->status = 0;
       spin_unlock_irqrestore (&dev->lock, flags);
-      psjailb_setup_complete(gadget->ep0, req);
+      psfreedom_setup_complete(gadget->ep0, req);
       return value;
     }
   }
@@ -424,9 +424,9 @@ static int psjailb_setup(struct usb_gadget *gadget,
   return value;
 }
 
-static void /* __init_or_exit */ psjailb_unbind(struct usb_gadget *gadget)
+static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 {
-  struct psjailb_device *dev = get_gadget_data(gadget);
+  struct psfreedom_device *dev = get_gadget_data(gadget);
 
   DBG(dev, "unbind\n");
 
@@ -443,9 +443,9 @@ static void /* __init_or_exit */ psjailb_unbind(struct usb_gadget *gadget)
 
 
 
-static int __init psjailb_bind(struct usb_gadget *gadget)
+static int __init psfreedom_bind(struct usb_gadget *gadget)
 {
-  struct psjailb_device *dev;
+  struct psfreedom_device *dev;
   int err = 0;
 
   dev = kzalloc(sizeof(*dev), GFP_KERNEL);
@@ -467,7 +467,7 @@ static int __init psjailb_bind(struct usb_gadget *gadget)
   }
 
   dev->current_port = 0;
-  dev->req->complete = psjailb_setup_complete;
+  dev->req->complete = psfreedom_setup_complete;
   gadget->ep0->driver_data = dev;
 
   INFO(dev, "%s, version: " DRIVER_VERSION "\n", longname);
@@ -482,24 +482,24 @@ static int __init psjailb_bind(struct usb_gadget *gadget)
   if (err < 0)
     goto fail;
 
-  DBG(dev, "psjailb_bind finished ok. Maxpacket: %d\n", gadget->ep0->maxpacket);
+  DBG(dev, "psfreedom_bind finished ok. Maxpacket: %d\n", gadget->ep0->maxpacket);
 
-  setup_timer(&psjailb_state_machine_timer, psjailb_state_machine_timeout,
+  setup_timer(&psfreedom_state_machine_timer, psfreedom_state_machine_timeout,
       (unsigned long) gadget);
 
-  psjailb_disconnect (gadget);
+  psfreedom_disconnect (gadget);
 
   return 0;
 
  fail:
-  psjailb_unbind(gadget);
+  psfreedom_unbind(gadget);
   return err;
 }
 
 
-static void psjailb_suspend(struct usb_gadget *gadget)
+static void psfreedom_suspend(struct usb_gadget *gadget)
 {
-  struct psjailb_device *dev = get_gadget_data(gadget);
+  struct psfreedom_device *dev = get_gadget_data(gadget);
 
   if (gadget->speed == USB_SPEED_UNKNOWN) {
     return;
@@ -508,26 +508,26 @@ static void psjailb_suspend(struct usb_gadget *gadget)
   DBG(dev, "suspend\n");
 }
 
-static void psjailb_resume(struct usb_gadget *gadget)
+static void psfreedom_resume(struct usb_gadget *gadget)
 {
-  struct psjailb_device *dev = get_gadget_data(gadget);
+  struct psfreedom_device *dev = get_gadget_data(gadget);
 
   DBG(dev, "resume\n");
 }
 
 
-static struct usb_gadget_driver psjailb_driver = {
+static struct usb_gadget_driver psfreedom_driver = {
   .speed	= USB_SPEED_HIGH,
   .function	= (char *)longname,
 
-  .bind		= psjailb_bind,
-  .unbind	= psjailb_unbind,
+  .bind		= psfreedom_bind,
+  .unbind	= psfreedom_unbind,
 
-  .setup	= psjailb_setup,
-  .disconnect	= psjailb_disconnect,
+  .setup	= psfreedom_setup,
+  .disconnect	= psfreedom_disconnect,
 
-  .suspend	= psjailb_suspend,
-  .resume	= psjailb_resume,
+  .suspend	= psfreedom_suspend,
+  .resume	= psfreedom_resume,
 
   .driver	= {
     .name		= (char *)shortname,
@@ -535,22 +535,22 @@ static struct usb_gadget_driver psjailb_driver = {
   },
 };
 
-static int __init psjailb_init(void)
+static int __init psfreedom_init(void)
 {
   int ret = 0;
 
   printk(KERN_INFO "init\n");
-  ret = usb_gadget_register_driver(&psjailb_driver);
+  ret = usb_gadget_register_driver(&psfreedom_driver);
 
   printk(KERN_INFO "register driver returned %d\n", ret);
 
   return ret;
 }
-module_init(psjailb_init);
+module_init(psfreedom_init);
 
-static void __exit psjailb_cleanup(void)
+static void __exit psfreedom_cleanup(void)
 {
-  usb_gadget_unregister_driver(&psjailb_driver);
+  usb_gadget_unregister_driver(&psfreedom_driver);
 }
-module_exit(psjailb_cleanup);
+module_exit(psfreedom_cleanup);
 

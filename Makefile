@@ -1,6 +1,6 @@
 EXTRA_CFLAGS = -I/usr/include
 
-obj-m	:= psjailbreak.o 
+obj-m	:= psfreedom.o 
 
 KDIR	:= /home/kakaroto/kernel-2.6.28/
 PWD	:= $(shell pwd)

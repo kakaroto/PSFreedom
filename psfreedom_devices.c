@@ -1,5 +1,5 @@
 /*
- * psjailbreak_devices.c -- PS3 Jailbreak exploit Gadget Driver
+ * psfreedom_devices.c -- PS3 Jailbreak exploit Gadget Driver
  *
  * Copyright (C) Youness Alaoui
  *
@@ -16,13 +16,13 @@
  *
  */
 
-#include "psjailb_devices.h"
+#include "psfreedom_devices.h"
 
-static void jig_response_send (struct psjailb_device *dev, struct usb_request *req);
+static void jig_response_send (struct psfreedom_device *dev, struct usb_request *req);
 
 static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
 {
-  struct psjailb_device *dev = ep->driver_data;
+  struct psfreedom_device *dev = ep->driver_data;
   int status = req->status;
   unsigned long flags;
 
@@ -80,7 +80,7 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
-static void jig_response_send (struct psjailb_device *dev, struct usb_request *req)
+static void jig_response_send (struct psfreedom_device *dev, struct usb_request *req)
 {
   struct usb_ep *ep = dev->in_ep;
 
@@ -112,7 +112,7 @@ static void jig_response_send (struct psjailb_device *dev, struct usb_request *r
 
 static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 {
-  struct psjailb_device *dev = ep->driver_data;
+  struct psfreedom_device *dev = ep->driver_data;
   int status = req->status;
   unsigned long flags;
 
@@ -165,7 +165,7 @@ static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
-static void jig_interrupt_start (struct psjailb_device *dev)
+static void jig_interrupt_start (struct psfreedom_device *dev)
 {
   struct usb_ep *ep = dev->out_ep;
   struct usb_request *req = NULL;
@@ -188,7 +188,7 @@ static void jig_interrupt_start (struct psjailb_device *dev)
 
 
 
-static int set_jig_config(struct psjailb_device *dev)
+static int set_jig_config(struct psfreedom_device *dev)
 {
   int err = 0;
 
@@ -217,7 +217,7 @@ fail:
 }
 
 static void
-jig_reset_config(struct psjailb_device *dev)
+jig_reset_config(struct psfreedom_device *dev)
 {
   DBG(dev, "JIG reset config\n");
   usb_ep_disable(dev->out_ep);
@@ -235,7 +235,7 @@ jig_reset_config(struct psjailb_device *dev)
  * by limiting configuration choices (like the pxa2xx).
  */
 static int
-jig_set_config(struct psjailb_device *dev, unsigned number)
+jig_set_config(struct psfreedom_device *dev, unsigned number)
 {
   int result = 0;
   struct usb_gadget *gadget = dev->gadget;
@@ -274,7 +274,7 @@ static int devices_setup(struct usb_gadget *gadget,
     const struct usb_ctrlrequest *ctrl, u16 request,
     u16 w_index, u16 w_value, u16 w_length)
 {
-  struct psjailb_device *dev = get_gadget_data(gadget);
+  struct psfreedom_device *dev = get_gadget_data(gadget);
   struct usb_request *req = dev->req;
   int value = -EOPNOTSUPP;
 
@@ -432,14 +432,14 @@ static int devices_setup(struct usb_gadget *gadget,
 
 static void devices_disconnect (struct usb_gadget *gadget)
 {
-  struct psjailb_device *dev = get_gadget_data (gadget);
+  struct psfreedom_device *dev = get_gadget_data (gadget);
 
   jig_reset_config (dev);
 }
 
 
 
-static int __init devices_bind(struct usb_gadget *gadget, struct psjailb_device *dev)
+static int __init devices_bind(struct usb_gadget *gadget, struct psfreedom_device *dev)
 {
   struct usb_ep *out_ep;
   struct usb_ep *in_ep;

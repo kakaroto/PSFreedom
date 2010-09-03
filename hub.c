@@ -30,7 +30,7 @@ MODULE_PARM_DESC(idProduct, "USB Product ID");
 
 
 static int hub_interrupt_queued = 0;
-static void hub_interrupt_transmit(struct psjailb_device *dev);
+static void hub_interrupt_transmit(struct psfreedom_device *dev);
 
 /* Taking first HUB vendor/product ids from http://www.linux-usb.org/usb.ids
  *
@@ -114,11 +114,11 @@ static const struct usb_descriptor_header *hub_function [] = {
 	NULL,
 };
 
-static void hub_port_changed (struct psjailb_device *dev);
+static void hub_port_changed (struct psfreedom_device *dev);
 
 
 static void
-switch_to_port (struct psjailb_device *dev, unsigned int port)
+switch_to_port (struct psfreedom_device *dev, unsigned int port)
 {
   if (dev->current_port == port)
     return;
@@ -129,7 +129,7 @@ switch_to_port (struct psjailb_device *dev, unsigned int port)
 }
 
 static void
-hub_connect_port (struct psjailb_device *dev, unsigned int port)
+hub_connect_port (struct psfreedom_device *dev, unsigned int port)
 {
   if (port == 0 || port > 6)
     return;
@@ -148,7 +148,7 @@ hub_connect_port (struct psjailb_device *dev, unsigned int port)
 }
 
 static void
-hub_disconnect_port (struct psjailb_device *dev, unsigned int port)
+hub_disconnect_port (struct psfreedom_device *dev, unsigned int port)
 {
   if (port == 0 || port > 6)
     return;
@@ -185,7 +185,7 @@ static int hub_config_buf(struct usb_gadget *gadget,
 
 static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 {
-  struct psjailb_device *dev = ep->driver_data;
+  struct psfreedom_device *dev = ep->driver_data;
   int status = req->status;
   unsigned long flags;
 
@@ -239,7 +239,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
-static void hub_interrupt_transmit (struct psjailb_device *dev)
+static void hub_interrupt_transmit (struct psfreedom_device *dev)
 {
   struct usb_ep *ep = dev->hub_ep;
   static struct usb_request *req = NULL;
@@ -287,13 +287,13 @@ static void hub_interrupt_transmit (struct psjailb_device *dev)
 
 }
 
-static void hub_port_changed (struct psjailb_device *dev)
+static void hub_port_changed (struct psfreedom_device *dev)
 {
   hub_interrupt_transmit (dev);
 }
 
 
-static int set_hub_config(struct psjailb_device *dev)
+static int set_hub_config(struct psfreedom_device *dev)
 {
   int err = 0;
 
@@ -312,7 +312,7 @@ fail:
 }
 
 static void
-hub_reset_config(struct psjailb_device *dev)
+hub_reset_config(struct psfreedom_device *dev)
 {
   DBG(dev, "reset config\n");
   usb_ep_disable(dev->hub_ep);
@@ -331,7 +331,7 @@ hub_reset_config(struct psjailb_device *dev)
  * by limiting configuration choices (like the pxa2xx).
  */
 static int
-hub_set_config(struct psjailb_device *dev, unsigned number)
+hub_set_config(struct psfreedom_device *dev, unsigned number)
 {
   int result = 0;
   struct usb_gadget *gadget = dev->gadget;
@@ -361,7 +361,7 @@ hub_set_config(struct psjailb_device *dev, unsigned number)
 
 static void hub_disconnect (struct usb_gadget *gadget)
 {
-  struct psjailb_device *dev = get_gadget_data (gadget);
+  struct psfreedom_device *dev = get_gadget_data (gadget);
 
   hub_reset_config (dev);
 }
@@ -378,7 +378,7 @@ static int hub_setup(struct usb_gadget *gadget,
     const struct usb_ctrlrequest *ctrl, u16 request,
     u16 w_index, u16 w_value, u16 w_length)
 {
-  struct psjailb_device *dev = get_gadget_data(gadget);
+  struct psfreedom_device *dev = get_gadget_data(gadget);
   struct usb_request *req = dev->req;
   int value = -EOPNOTSUPP;
 
@@ -667,7 +667,7 @@ static int hub_setup(struct usb_gadget *gadget,
   return value;
 }
 
-static int __init hub_bind(struct usb_gadget *gadget, struct psjailb_device *dev)
+static int __init hub_bind(struct usb_gadget *gadget, struct psfreedom_device *dev)
 {
   struct usb_ep *in_ep;
 
