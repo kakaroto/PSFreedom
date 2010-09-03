@@ -12,13 +12,23 @@
  */
 
 /* Hub endpoint Descriptor */
-static struct usb_endpoint_descriptor jig_endpoint_desc = {
+static struct usb_endpoint_descriptor jig_out_endpoint_desc = {
   .bLength =		USB_DT_ENDPOINT_SIZE,
   .bDescriptorType =	USB_DT_ENDPOINT,
-  .bEndpointAddress =	USB_DIR_OUT,
-  .bmAttributes =	USB_ENDPOINT_XFER_INT,
-  .wMaxPacketSize =	__constant_cpu_to_le16(8),
-  .bInterval =		255,	// frames -> 32 ms
+  .bEndpointAddress =	USB_DIR_OUT | 0x02,
+  .bmAttributes =	USB_ENDPOINT_XFER_BULK,
+  .wMaxPacketSize =	__constant_cpu_to_le16(64),
+  .bInterval =		0x00,
+};
+
+/* Hub endpoint Descriptor */
+static struct usb_endpoint_descriptor jig_in_endpoint_desc = {
+  .bLength =		USB_DT_ENDPOINT_SIZE,
+  .bDescriptorType =	USB_DT_ENDPOINT,
+  .bEndpointAddress =	USB_DIR_IN | 0x01,
+  .bmAttributes =	USB_ENDPOINT_XFER_BULK,
+  .wMaxPacketSize =	__constant_cpu_to_le16(64),
+  .bInterval =		0x00,
 };
 
 
