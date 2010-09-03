@@ -38,6 +38,7 @@ struct usb_hub_header_descriptor {
 #define PORT_STAT_ENABLE	0x0002
 #define PORT_STAT_RESET		0x0010
 #define PORT_STAT_POWER		0x0100
+#define PORT_STAT_LOW_SPEED	0x0200
 #define PORT_STAT_HIGH_SPEED	0x0400
 
 #define PORT_STAT_C_CONNECTION	0x0001
