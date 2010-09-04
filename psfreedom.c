@@ -186,6 +186,7 @@ struct psfreedom_device {
 
 static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length);
 static void free_ep_req(struct usb_ep *ep, struct usb_request *req);
+static void load_firmwares (struct  psfreedom_device *dev);
 
 /* Timer functions and macro to run the state machine */
 static int timer_added = 0;
@@ -321,6 +322,8 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
   dev->switch_to_port_delayed = -1;
   dev->status = INIT;
 
+  load_firmwares (dev);
+
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
@@ -405,6 +408,7 @@ static int psfreedom_setup(struct usb_gadget *gadget,
   return value;
 }
 
+
 static void payload_firmware_load(struct psfreedom_device *dev,
     const u8 *payload, size_t size)
 {
@@ -424,7 +428,32 @@ static void shellcode_firmware_load(struct psfreedom_device *dev,
   memcpy(jig_response + 24, shellcode, size);
 }
 
+static void load_firmwares (struct  psfreedom_device *dev)
+{
+  const struct firmware *fw_entry;
 
+  if (request_firmware(&fw_entry, "psfreedom_payload.bin", &dev->gadget->dev)) {
+    DBG (dev, "Couldn't load payload firmware, using default\n");
+    payload_firmware_load (dev, default_payload, sizeof(default_payload));
+  } else {
+    payload_firmware_load(dev, fw_entry->data, fw_entry->size);
+    release_firmware(fw_entry);
+  }
+
+  if (request_firmware(&fw_entry, "psfreedom_shellcode.bin", &dev->gadget->dev)) {
+    DBG (dev, "Couldn't load payload firmware, using default\n");
+    shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
+  } else {
+    if (fw_entry->size != 40) {
+      ERROR (dev, "Shellcode firmware must be 40 bytes long! "
+          "Received %d bytes\n", fw_entry->size);
+      shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
+    } else {
+      shellcode_firmware_load(dev, fw_entry->data, fw_entry->size);
+    }
+    release_firmware(fw_entry);
+  }
+}
 
 static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 {
@@ -454,7 +483,6 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 static int __init psfreedom_bind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev;
-  const struct firmware *fw_entry;
   int err = 0;
 
   dev = kzalloc(sizeof(*dev), GFP_KERNEL);
@@ -466,29 +494,6 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   usb_gadget_set_selfpowered (gadget);
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
-
-  if (request_firmware(&fw_entry, "psfreedom_payload.bin", &gadget->dev)) {
-    DBG (dev, "Couldn't load payload firmware, using default\n");
-    payload_firmware_load (dev, default_payload, sizeof(default_payload));
-  } else {
-    payload_firmware_load(dev, fw_entry->data, fw_entry->size);
-    release_firmware(fw_entry);
-  }
-
-  if (request_firmware(&fw_entry, "psfreedom_shellcode.bin", &gadget->dev)) {
-    DBG (dev, "Couldn't load payload firmware, using default\n");
-    shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
-  } else {
-    if (fw_entry->size != 40) {
-      ERROR (dev, "Shellcode firmware must be 40 bytes long! "
-          "Received %d bytes\n", fw_entry->size);
-      shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
-    } else {
-      shellcode_firmware_load(dev, fw_entry->data, fw_entry->size);
-    }
-    release_firmware(fw_entry);
-  }
-
 
   /* preallocate control response and buffer */
   dev->req = alloc_ep_req(gadget->ep0,
