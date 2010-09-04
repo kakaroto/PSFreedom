@@ -11,8 +11,13 @@ endif
 
 PWD	:= $(shell pwd)
 
+ifndef PLATFORM
 all:
-	@echo "Please choose your platform by running 'make <platform>'"
+	@echo "Please choose your platform by running 'make <platform>'."
+	@echo "You can also set the PLATFORM environment variable"
+else
+all: ${PLATFORM}
+endif
 
 n900: N900
 N900: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
