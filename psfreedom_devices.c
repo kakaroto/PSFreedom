@@ -452,7 +452,7 @@ static int __init devices_bind(struct usb_gadget *gadget,
       break;
   }
   if (!out_ep) {
-    pr_err("%s: can't find %s on %s\n", psfreedom_get_endpoint_name (2, 0),
+    ERROR (dev, "%s: can't find %s on %s\n", psfreedom_get_endpoint_name (2, 0),
         shortname, gadget->name);
     return -ENODEV;
   }
@@ -463,7 +463,7 @@ static int __init devices_bind(struct usb_gadget *gadget,
       break;
   }
   if (!in_ep) {
-    pr_err("%s: can't find %s on %s\n", psfreedom_get_endpoint_name (1, 1),
+    ERROR (dev, "%s: can't find %s on %s\n", psfreedom_get_endpoint_name (1, 1),
         shortname, gadget->name);
     return -ENODEV;
   }

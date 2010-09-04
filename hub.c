@@ -663,7 +663,7 @@ static int __init hub_bind(struct usb_gadget *gadget, struct psfreedom_device *d
       break;
   }
   if (!in_ep) {
-    pr_err("%s: can't find %s on %s\n", psfreedom_get_endpoint_name (2, 1),
+    ERROR (dev, "%s: can't find %s on %s\n", psfreedom_get_endpoint_name (2, 1),
         shortname, gadget->name);
     return -ENODEV;
   }
