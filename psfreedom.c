@@ -20,9 +20,11 @@
 //#define VERBOSE_DEBUG
 
 #include <linux/version.h>
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
 #include <linux/firmware.h>
+#include <linux/proc_fs.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #include <linux/usb/ch9.h>
@@ -39,6 +41,8 @@ MODULE_LICENSE("GPL v3");
 
 #define DRIVER_VERSION "29 August 2010"
 
+#define PROC_STATUS_NAME             "status"
+#define PROC_DIR_NAME		     "psfreedom"
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
@@ -150,7 +154,11 @@ struct psfreedom_device {
   /* The port1 configuration descriptor. dynamically loaded from firmware */
   u8 *port1_config_desc;
   unsigned int port1_config_desc_size;
+  /* /proc FS data */
+  struct proc_dir_entry *proc_dir;
+  struct proc_dir_entry *proc_status_entry;
 };
+
 
 /* Undef these if it gets defined by the controller's include in
    psfreedom_machine.c */
@@ -455,6 +463,57 @@ static void load_firmwares (struct  psfreedom_device *dev)
   }
 }
 
+
+int proc_status_read(char *buffer, char **start, off_t offset, int count,
+    int *eof, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+  unsigned int len;
+  unsigned long flags;
+
+  spin_lock_irqsave (&dev->lock, flags);
+  VDBG (dev, "proc_status_read (/proc/%s/%s) called. count %d\n",
+      PROC_DIR_NAME, PROC_STATUS_NAME, count);
+
+  len = strlen(STATUS_STR (dev->status));
+  /* fill the buffer, return the buffer size */
+  memcpy(buffer + offset, STATUS_STR (dev->status), len);
+
+  spin_unlock_irqrestore (&dev->lock, flags);
+
+  return len;
+}
+
+int proc_status_write(struct file *file, const char *buffer, unsigned long count,
+    void *data)
+{
+  return 0;
+}
+
+static void create_proc_fs (struct psfreedom_device *dev,
+    struct proc_dir_entry **entry,  char *procfs_filename,
+    read_proc_t read_proc, write_proc_t write_proc)
+{
+  /* create the /proc file */
+  *entry = create_proc_entry(procfs_filename, 0644, dev->proc_dir);
+
+  if (*entry == NULL) {
+    printk(KERN_ALERT "Error: Could not initialize /proc/%s/%s\n",
+        PROC_DIR_NAME, procfs_filename);
+  } else {
+    (*entry)->read_proc  = read_proc;
+    (*entry)->write_proc = write_proc;
+    (*entry)->data       = dev;
+    (*entry)->mode       = S_IFREG | S_IRUGO;
+    (*entry)->uid        = 0;
+    (*entry)->gid        = 0;
+    (*entry)->size       = 0;
+
+    printk(KERN_INFO "/proc/%s/%s created\n", PROC_DIR_NAME, procfs_filename);
+  }
+}
+
+
 static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev = get_gadget_data(gadget);
@@ -473,6 +532,10 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
       free_ep_req(gadget->ep0, dev->req);
     if (dev->hub_req)
       free_ep_req(dev->hub_ep, dev->hub_req);
+    if (dev->proc_status_entry)
+      remove_proc_entry(PROC_STATUS_NAME, dev->proc_dir);
+    if (dev->proc_dir)
+      remove_proc_entry(PROC_DIR_NAME, NULL);
     kfree(dev);
     set_gadget_data(gadget, NULL);
   }
@@ -524,6 +587,15 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
 
   psfreedom_disconnect (gadget);
 
+  /* Create the /proc filesystem */
+  dev->proc_dir = proc_mkdir (PROC_DIR_NAME, NULL);
+  if (dev->proc_dir) {
+    printk(KERN_INFO "/proc/%s/ created\n", PROC_DIR_NAME);
+    create_proc_fs (dev, &dev->proc_status_entry, PROC_STATUS_NAME,
+        proc_status_read, proc_status_write);
+    /* that's it for now..*/
+  }
+
   return 0;
 
  fail:
@@ -549,7 +621,6 @@ static void psfreedom_resume(struct usb_gadget *gadget)
 
   DBG(dev, "resume\n");
 }
-
 
 static struct usb_gadget_driver psfreedom_driver = {
   .speed	= USB_SPEED_HIGH,
