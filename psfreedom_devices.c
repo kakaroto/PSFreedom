@@ -448,22 +448,26 @@ static int __init devices_bind(struct usb_gadget *gadget,
   struct usb_ep *in_ep;
 
   gadget_for_each_ep (out_ep, gadget) {
-    if (0 == strcmp (out_ep->name, psfreedom_get_endpoint_name (2, 0)))
+    if (0 == strcmp (out_ep->name,
+            psfreedom_get_endpoint_name (&jig_out_endpoint_desc)))
       break;
   }
   if (!out_ep) {
-    ERROR (dev, "%s: can't find %s on %s\n", psfreedom_get_endpoint_name (2, 0),
+    ERROR (dev, "%s: can't find %s on %s\n",
+        psfreedom_get_endpoint_name (&jig_out_endpoint_desc),
         shortname, gadget->name);
     return -ENODEV;
   }
   out_ep->driver_data = out_ep;	/* claim */
 
   gadget_for_each_ep (in_ep, gadget) {
-    if (0 == strcmp (in_ep->name, psfreedom_get_endpoint_name (1, 1)))
+    if (0 == strcmp (in_ep->name,
+            psfreedom_get_endpoint_name (&jig_in_endpoint_desc)))
       break;
   }
   if (!in_ep) {
-    ERROR (dev, "%s: can't find %s on %s\n", psfreedom_get_endpoint_name (1, 1),
+    ERROR (dev, "%s: can't find %s on %s\n",
+        psfreedom_get_endpoint_name (&jig_in_endpoint_desc),
         shortname, gadget->name);
     return -ENODEV;
   }
