@@ -23,8 +23,13 @@
 #include <linux/kernel.h>
 #include <linux/device.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
+#else
+#include <linux/usb.h>
+#include <linux/usb_gadget.h>
+#endif
 
 /*-------------------------------------------------------------------------*/
 
@@ -157,15 +162,20 @@ struct psfreedom_device {
 #endif
 
 
+#define INFO(d, fmt, args...)                   \
+  dev_info(&(d)->gadget->dev , fmt , ## args)
+#define ERROR(d, fmt, args...)                  \
+  dev_err(&(d)->gadget->dev , fmt , ## args)
 
 #define DBG(d, fmt, args...)                    \
   dev_dbg(&(d)->gadget->dev , fmt , ## args)
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #define VDBG(d, fmt, args...)                   \
   dev_vdbg(&(d)->gadget->dev , fmt , ## args)
-#define ERROR(d, fmt, args...)                  \
-  dev_err(&(d)->gadget->dev , fmt , ## args)
-#define INFO(d, fmt, args...)                   \
-  dev_info(&(d)->gadget->dev , fmt , ## args)
+#else
+#define VDBG DBG
+#endif
 
 
 static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length);
