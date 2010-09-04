@@ -477,6 +477,16 @@ static int __init devices_bind(struct usb_gadget *gadget,
   dev->in_ep = in_ep;
   dev->out_ep = out_ep;
 
+  /* If the machine specific code changed our descriptors,
+     change the ones we'll send too */
+  memcpy (port5_config_desc + USB_DT_CONFIG_SIZE + USB_DT_INTERFACE_SIZE,
+      &jig_out_endpoint_desc,
+      USB_DT_ENDPOINT_SIZE);
+  memcpy (port5_config_desc + USB_DT_CONFIG_SIZE + \
+      USB_DT_INTERFACE_SIZE + USB_DT_ENDPOINT_SIZE,
+      &jig_in_endpoint_desc,
+      USB_DT_ENDPOINT_SIZE);
+
 
   INFO(dev, "using %s, EP IN %s (0x%X)\n", gadget->name, in_ep->name,
       jig_in_endpoint_desc.bEndpointAddress);
