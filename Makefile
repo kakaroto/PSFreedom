@@ -25,14 +25,14 @@ N900: KDIR := ~/kernel-2.6.28/
 N900:
 	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-omap1 modules
 
-n810: N810
-N810:
-	@echo "Not yet supported"
-n800: N800
-N800:
-	@echo "Not yet supported"
-
-
+n810: N8x0
+N810: N8x0
+n800: N8x0
+N800: N8x0
+N8x0: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+N8x0: KDIR := /usr/src/kernel-source-diablo
+N8x0:
+	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-omap1 modules
 
 clean:
 	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c

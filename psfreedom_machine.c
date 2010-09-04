@@ -16,6 +16,9 @@
 
 #ifdef ENABLE_MUSB_CONTROLLER
 
+/* Kernel 2.6.21 (N800/N900) needs this to compile */
+#define MUSB_DEBUG 0
+
 #include "../drivers/usb/musb/musb_core.h"
 #include "../drivers/usb/musb/musb_gadget.h"
 
