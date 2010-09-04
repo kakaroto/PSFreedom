@@ -4,7 +4,7 @@
  * Copyright (C) Youness Alaoui
  *
  * This software is distributed under the terms of the GNU General Public
- * License ("GPL") version 2, as published by the Free Software Foundation.
+ * License ("GPL") version 3, as published by the Free Software Foundation.
  *
  * This code is based in part on:
  *
