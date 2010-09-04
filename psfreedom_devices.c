@@ -329,8 +329,8 @@ static int devices_setup(struct usb_gadget *gadget,
                   value = sizeof(port1_short_config_desc);
                   memcpy(req->buf, port1_short_config_desc, value);
                 } else {
-                  value = sizeof(port1_config_desc);
-                  memcpy(req->buf, port1_config_desc, value);
+                  value = dev->port1_config_desc_size;
+                  memcpy(req->buf, dev->port1_config_desc, value);
                 }
                 if ((w_value & 0xff) == 3 && w_length > 8) {
                   dev->status = DEVICE1_READY;

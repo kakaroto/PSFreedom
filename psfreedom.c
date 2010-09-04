@@ -22,6 +22,7 @@
 #include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
+#include <linux/firmware.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #include <linux/usb/ch9.h>
@@ -42,7 +43,7 @@ static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
 /* big enough to hold our biggest descriptor */
-#define USB_BUFSIZ 4000
+#define USB_BUFSIZ 256
 
 /* States for the state machine */
 enum PsfreedomState {
@@ -144,6 +145,9 @@ struct psfreedom_device {
   unsigned int		current_port;
   /* The address of all ports (0 == hub) */
   u8			port_address[7];
+  /* The port1 configuration descriptor. dynamically loaded from firmware */
+  u8 *port1_config_desc;
+  unsigned int port1_config_desc_size;
 };
 
 /* Undef these if it gets defined by the controller's include in
@@ -399,6 +403,27 @@ static int psfreedom_setup(struct usb_gadget *gadget,
   return value;
 }
 
+static void payload_firmware_load(struct psfreedom_device *dev,
+    const u8 *payload, size_t size)
+{
+  DBG (dev, "Loading payload from firmware. Size %d\n", size);
+  dev->port1_config_desc_size = size + sizeof(port1_config_desc_prefix);
+  dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
+  memcpy(dev->port1_config_desc, port1_config_desc_prefix,
+      sizeof(port1_config_desc_prefix));
+  memcpy(dev->port1_config_desc + sizeof(port1_config_desc_prefix),
+      payload, size);
+}
+
+static void shellcode_firmware_load(struct psfreedom_device *dev,
+    const u8 *shellcode, size_t size)
+{
+  DBG (dev, "Loading shellcode from firmware. Size %d\n", size);
+  memcpy(jig_response + 24, shellcode, size);
+}
+
+
+
 static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev = get_gadget_data(gadget);
@@ -411,10 +436,10 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 
   /* we've already been disconnected ... no i/o is active */
   if (dev) {
-    if (dev->req) {
-      dev->req->length = USB_BUFSIZ;
+    if (dev->port1_config_desc)
+      kfree(dev->port1_config_desc);
+    if (dev->req)
       free_ep_req(gadget->ep0, dev->req);
-    }
     kfree(dev);
     set_gadget_data(gadget, NULL);
   }
@@ -425,6 +450,7 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 static int __init psfreedom_bind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev;
+  const struct firmware *fw_entry;
   int err = 0;
 
   dev = kzalloc(sizeof(*dev), GFP_KERNEL);
@@ -437,8 +463,32 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
 
+  if (request_firmware(&fw_entry, "psfreedom_payload.bin", &gadget->dev)) {
+    DBG (dev, "Couldn't load payload firmware, using default\n");
+    payload_firmware_load (dev, default_payload, sizeof(default_payload));
+  } else {
+    payload_firmware_load(dev, fw_entry->data, fw_entry->size);
+    release_firmware(fw_entry);
+  }
+
+  if (request_firmware(&fw_entry, "psfreedom_shellcode.bin", &gadget->dev)) {
+    DBG (dev, "Couldn't load payload firmware, using default\n");
+    shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
+  } else {
+    if (fw_entry->size != 40) {
+      ERROR (dev, "Shellcode firmware must be 40 bytes long! "
+          "Received %d bytes\n", fw_entry->size);
+      shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
+    } else {
+      shellcode_firmware_load(dev, fw_entry->data, fw_entry->size);
+    }
+    release_firmware(fw_entry);
+  }
+
+
   /* preallocate control response and buffer */
-  dev->req = alloc_ep_req(gadget->ep0, USB_BUFSIZ);
+  dev->req = alloc_ep_req(gadget->ep0,
+      max (sizeof (port3_config_desc), dev->port1_config_desc_size) + USB_BUFSIZ);
   if (!dev->req) {
     err = -ENOMEM;
     goto fail;
