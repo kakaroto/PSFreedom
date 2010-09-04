@@ -43,19 +43,25 @@ static int psfreedom_is_low_speed (void)
 
 /**
  * psfreedom_get_endpoint_name:
- * epnum: The endpoint index number
- * in: set to 1 if it's for an IN endpoint
+ * desc: The endpoint description
  *
- * A function to help find the name of the endpoint that we're looking for
- * Retursn: the name of the endpoint
+ * A function to help find the name of the endpoint that we're looking for.
+ * This should take into consideration the endpoint address and the direction.
+ * Make sure each endpoint requested (1 IN, 2 IN and 2 OUT) has a different
+ * endpoint name to avoid a single endpoint being used for different devices.
+ *
+ * Returs: the name of the endpoint
  */
-static char *psfreedom_get_endpoint_name (int epnum, int in)
+static char *psfreedom_get_endpoint_name (struct usb_endpoint_descriptor *desc)
 {
-  if (epnum == 1 && in)
+  u8 address = desc->bEndpointAddress;
+  u8 epnum = address & 0x0f;
+
+  if (epnum == 1 && (address & USB_DIR_IN) == USB_DIR_IN)
     return "ep1in";
-  else if (epnum == 2 && in)
+  else if (epnum == 2 && (address & USB_DIR_IN) == USB_DIR_IN)
     return "ep2in";
-  else if (epnum == 2 && !in)
+  else if (epnum == 2 && (address & USB_DIR_IN) == 0)
     return "ep2out";
   else
     return NULL;
