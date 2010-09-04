@@ -4,12 +4,14 @@
  * Copyright (C) Youness Alaoui (KaKaRoTo)
  *
  * This software is distributed under the terms of the GNU General Public
- * License ("GPL") version 2, as published by the Free Software Foundation.
+ * License ("GPL") version 3, as published by the Free Software Foundation.
  *
  * This file holds USB constants and structures defined
  * by the USB Device Class Definition for HUB Devices.
- * Comments below reference relevant sections of that document:
  *
+ * This code is based in part on:
+ *
+ * USB MIDI Gadget Driver, Copyright (C) 2006 Thumtronics Pty Ltd.
  */
 
 #ifndef __LINUX_USB_HUB_H
