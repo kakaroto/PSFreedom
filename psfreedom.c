@@ -19,13 +19,9 @@
 #define DEBUG
 //#define VERBOSE_DEBUG
 
+#include <linux/version.h>
 #include <linux/kernel.h>
-#include <linux/utsname.h>
 #include <linux/device.h>
-
-#include <sound/core.h>
-#include <sound/initval.h>
-#include <sound/rawmidi.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
