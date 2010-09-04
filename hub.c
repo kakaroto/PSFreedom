@@ -18,8 +18,6 @@
 
 #include "hub.h"
 
-#define HUB_BUFSIZ 256
-
 static int hub_interrupt_queued = 0;
 static void hub_interrupt_transmit(struct psfreedom_device *dev);
 
@@ -172,6 +170,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
            see if there's more to go.
            hub_transmit eats req, don't queue it again. */
         //hub_interrupt_transmit(dev);
+        free_ep_req (ep, req);
         spin_unlock_irqrestore (&dev->lock, flags);
         return;
       }
@@ -214,15 +213,14 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 static void hub_interrupt_transmit (struct psfreedom_device *dev)
 {
   struct usb_ep *ep = dev->hub_ep;
-  static struct usb_request *req = NULL;
+  struct usb_request *req = NULL;
   u8 data = 0;
   int i;
 
   if (!ep)
     return;
 
-  if (!req)
-    req = alloc_ep_req(ep, HUB_BUFSIZ);
+  req = alloc_ep_req(ep, USB_BUFSIZ);
 
   if (!req) {
     ERROR(dev, "hub_interrupt_transmit: alloc_ep_request failed\n");
@@ -241,6 +239,7 @@ static void hub_interrupt_transmit (struct psfreedom_device *dev)
 
     if (hub_interrupt_queued) {
       ERROR(dev, "hub_interrupt_transmit: Already queued a request\n");
+      free_ep_req (ep, req);
       return;
     }
 
@@ -260,6 +259,7 @@ static void hub_interrupt_transmit (struct psfreedom_device *dev)
     if (hub_interrupt_queued)
       usb_ep_dequeue(ep, req);
     hub_interrupt_queued = 0;
+    free_ep_req (ep, req);
   }
 
 }
