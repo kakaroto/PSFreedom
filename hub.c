@@ -170,7 +170,6 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
            see if there's more to go.
            hub_transmit eats req, don't queue it again. */
         //hub_interrupt_transmit(dev);
-        free_ep_req (ep, req);
         spin_unlock_irqrestore (&dev->lock, flags);
         return;
       }
@@ -213,14 +212,17 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 static void hub_interrupt_transmit (struct psfreedom_device *dev)
 {
   struct usb_ep *ep = dev->hub_ep;
-  struct usb_request *req = NULL;
+  struct usb_request *req = dev->hub_req;
   u8 data = 0;
   int i;
 
   if (!ep)
     return;
 
-  req = alloc_ep_req(ep, USB_BUFSIZ);
+  if (!req) {
+    req = alloc_ep_req(ep, USB_BUFSIZ);
+    dev->hub_req = req;
+  }
 
   if (!req) {
     ERROR(dev, "hub_interrupt_transmit: alloc_ep_request failed\n");
@@ -239,7 +241,6 @@ static void hub_interrupt_transmit (struct psfreedom_device *dev)
 
     if (hub_interrupt_queued) {
       ERROR(dev, "hub_interrupt_transmit: Already queued a request\n");
-      free_ep_req (ep, req);
       return;
     }
 
@@ -259,7 +260,6 @@ static void hub_interrupt_transmit (struct psfreedom_device *dev)
     if (hub_interrupt_queued)
       usb_ep_dequeue(ep, req);
     hub_interrupt_queued = 0;
-    free_ep_req (ep, req);
   }
 
 }
@@ -673,6 +673,12 @@ static int __init hub_bind(struct usb_gadget *gadget, struct psfreedom_device *d
 
   /* ok, we made sense of the hardware ... */
   dev->hub_ep = in_ep;
+  dev->hub_req = alloc_ep_req(in_ep, USB_BUFSIZ);
+  if (!dev->req) {
+    ERROR (dev, "Couldn't alloc hub request\n");
+    return -ENOMEM;
+  }
+
 
   /* The device's max packet size MUST be the same as ep0 */
   hub_device_desc.bMaxPacketSize0 = gadget->ep0->maxpacket;

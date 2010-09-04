@@ -125,6 +125,8 @@ struct psfreedom_device {
   struct usb_gadget	*gadget;
   /* for control responses */
   struct usb_request	*req;
+  /* for hub interrupts */
+  struct usb_request	*hub_req;
   /* The hub uses a non standard ep2in */
   struct usb_ep		*hub_ep;
   /* BULK IN for the JIG */
@@ -440,6 +442,8 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
       kfree(dev->port1_config_desc);
     if (dev->req)
       free_ep_req(gadget->ep0, dev->req);
+    if (dev->hub_req)
+      free_ep_req(dev->hub_ep, dev->hub_req);
     kfree(dev);
     set_gadget_data(gadget, NULL);
   }
