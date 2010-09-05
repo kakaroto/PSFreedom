@@ -11,35 +11,50 @@ endif
 
 PWD	:= $(shell pwd)
 
+
 ifndef PLATFORM
 all:
 	@echo "Please choose your platform by running 'make <platform>'."
-	@echo "You can also set the PLATFORM environment variable"
+	@echo "You can also export the PLATFORM environment variable before running 'make'"
 else
 all: ${PLATFORM}
 endif
 
-n900: N900
-N900: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-N900: KDIR := /usr/src/kernel-2.6.28/
-N900:
-	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-omap1 modules
+#Build rules
 
-n810: N8x0
-N810: N8x0
-n800: N8x0
-N800: N8x0
-N8x0: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-N8x0: KDIR := /usr/src/kernel-source-diablo
-N8x0:
-	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-omap1 modules
-
-palmpre: PalmPre
-PalmPre: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER
-PalmPre: KDIR	:= /usr/src/linux-2.6.24
-PalmPre:
-	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-joplin-3430 modules
+build:
+	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=${EXTRAVERSION} modules
 
 clean:
 	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
 	rm -rf .tmp_versions
+
+# Aliases for platforms
+
+n900: N900
+n800: N8x0
+N800: N8x0
+n810: N8x0
+N810: N8x0
+palmpre: PalmPre
+PALMPRE: PalmPre
+
+
+# Build configuration for each target
+# Don't forget to add a dependency on 'build'
+
+N900: KDIR := /usr/src/kernel-2.6.28/
+N900: EXTRAVERSION:=-omap1
+N900: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+N900: build
+
+N8x0: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+N8x0: KDIR := /usr/src/kernel-source-diablo
+N8x0: EXTRAVERSION:=-omap1
+N8x0: build
+
+PalmPre: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER
+PalmPre: KDIR	:= /usr/src/linux-2.6.24
+PalmPre: EXTRAVERSION:=-joplin-3430
+PalmPre: build
+
