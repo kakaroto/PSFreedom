@@ -38,6 +38,8 @@ n810: N8x0
 N810: N8x0
 palmpre: PalmPre
 PALMPRE: PalmPre
+palmpixi: PalmPixi
+PALMPIXI: PalmPixi
 archos: ARCHOS
 Archos: ARCHOS
 
@@ -60,6 +62,10 @@ PalmPre: KDIR	:= /usr/src/linux-2.6.24
 PalmPre: EXTRAVERSION:=-joplin-3430
 PalmPre: build
 
+PalmPixi: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER -DCONFIG_USB_GADGET_MUSB_HDRC
+PalmPixi: KDIR	:= /usr/src/linux-2.6.24-pixi
+PalmPixi: EXTRAVERSION:=-chuck
+PalmPixi: build
 
 ARCHOS: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 ARCHOS: KDIR   := /usr/src/linux-2.6.22.1
