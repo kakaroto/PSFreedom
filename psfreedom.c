@@ -550,11 +550,12 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   if (!dev) {
     return -ENOMEM;
   }
-
   spin_lock_init(&dev->lock);
   usb_gadget_set_selfpowered (gadget);
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
+
+  INFO(dev, "%s, version: " DRIVER_VERSION "\n", longname);
 
   load_firmwares (dev);
 
@@ -568,8 +569,6 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
 
   dev->req->complete = psfreedom_setup_complete;
   gadget->ep0->driver_data = dev;
-
-  INFO(dev, "%s, version: " DRIVER_VERSION "\n", longname);
 
   /* Bind the hub and devices */
   err = hub_bind (gadget, dev);
