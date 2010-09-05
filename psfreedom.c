@@ -330,8 +330,6 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
   dev->switch_to_port_delayed = -1;
   dev->status = INIT;
 
-  load_firmwares (dev);
-
   spin_unlock_irqrestore (&dev->lock, flags);
 }
 
@@ -557,6 +555,8 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   usb_gadget_set_selfpowered (gadget);
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
+
+  load_firmwares (dev);
 
   /* preallocate control response and buffer */
   dev->req = alloc_ep_req(gadget->ep0,
