@@ -34,6 +34,12 @@ N8x0: KDIR := /usr/src/kernel-source-diablo
 N8x0:
 	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-omap1 modules
 
+palmpre: PalmPre
+PalmPre: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER
+PalmPre: KDIR	:= /usr/src/linux-2.6.24
+PalmPre:
+	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-joplin-3430 modules
+
 clean:
 	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
 	rm -rf .tmp_versions
