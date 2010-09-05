@@ -21,7 +21,7 @@ endif
 
 n900: N900
 N900: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-N900: KDIR := ~/kernel-2.6.28/
+N900: KDIR := /usr/src/kernel-2.6.28/
 N900:
 	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=-omap1 modules
 
