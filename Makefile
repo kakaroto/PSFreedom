@@ -38,6 +38,8 @@ n810: N8x0
 N810: N8x0
 palmpre: PalmPre
 PALMPRE: PalmPre
+archos: ARCHOS
+Archos: ARCHOS
 
 
 # Build configuration for each target
@@ -58,3 +60,8 @@ PalmPre: KDIR	:= /usr/src/linux-2.6.24
 PalmPre: EXTRAVERSION:=-joplin-3430
 PalmPre: build
 
+
+ARCHOS: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+ARCHOS: KDIR   := /usr/src/linux-2.6.22.1
+ARCHOS: EXTRAVERSION:=-omap1
+ARCHOS: build
