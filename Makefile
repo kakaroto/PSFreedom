@@ -81,6 +81,6 @@ Desire: EXTRAVERSION:=
 Desire: build
 
 Dingoo: EXTRA_CFLAGS += -DENABLE_JZ4740_CONTROLLER
-Dingoo: KDIR := /home/waninkoko/Dingoo/opendingux-kernel
+Dingoo: KDIR := /usr/src/opendingux-kernel
 Dingoo: EXTRAVERSION:=
 Dingoo: build
