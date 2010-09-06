@@ -260,8 +260,6 @@ static u8 psfreedom_get_address (struct usb_gadget *g)
 
   if (ui) {
     buffer = readl(USBDEVADDR);
-    /* Remove the possible 'delay operation' flag */
-    buffer = buffer & (0 << 24);
     /* The address is in the bits 25-32 */
     address = (u8) (buffer >> 25) & 0x7F;
     dev_vdbg(&g->dev, "***** Getting address : %d\n", address);
