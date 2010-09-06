@@ -110,7 +110,7 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 
 #endif /* ENABLE_MUSB_CONTROLLER */
 
-#ifdef ENABLE_MS727K_CONTROLLER
+#ifdef ENABLE_MSM72K_CONTROLLER
 
 #define USBDEVADDR ((unsigned)ui->addr + 0x0154)
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
