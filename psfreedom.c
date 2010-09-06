@@ -116,7 +116,7 @@ enum PsfreedomState {
       r==0x2303?"SET_PORT_FEATURE":             \
       r==0xa300?"GET_PORT_STATUS":              \
       r==0x2301?"CLEAR_PORT_FEATURE":           \
-      r==0x000B?"SET_INTERFACE":                \
+      r==0x010B?"SET_INTERFACE":                \
       r==0x21AA?"FREEDOM":                      \
       "UNKNOWN")
 
