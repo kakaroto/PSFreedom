@@ -295,8 +295,6 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 
 #define JZ_REG_UDC_FADDR	0x00 /* Function Address 8-bit */
 
-extern struct jz4740_udc *the_controller;
-
 static inline uint8_t usb_readb (struct jz4740_udc *udc, size_t reg)
 {
 	return readb(udc->base + reg);
@@ -341,7 +339,7 @@ static char *psfreedom_get_endpoint_name (struct usb_endpoint_descriptor *desc)
 
 static u8 psfreedom_get_address (struct usb_gadget *g)
 {
-  struct jz4740_udc *dev = the_controller;
+  struct jz4740_udc *dev = container_of(g, struct jz4740_udc, gadget);
   u8 address = 0;
 
   if (dev)
@@ -352,7 +350,7 @@ static u8 psfreedom_get_address (struct usb_gadget *g)
 
 static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 {
-  struct jz4740_udc *dev = the_controller;
+  struct jz4740_udc *dev = container_of(g, struct jz4740_udc, gadget);
 
   if (dev) {
     dev->usb_address = address;
