@@ -55,6 +55,8 @@ desire: Desire
 DESIRE: Desire
 dingoo: Dingoo
 DINGOO: Dingoo
+nexus1-cm6: nexus1-cm6
+NEXUS1-CM6: nexus1-cm6
 
 # Build configuration for each target
 # Don't forget to add a dependency on 'build'
@@ -100,6 +102,11 @@ Desire: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG
 Desire: KDIR := /usr/src/linux-2.6.32.9
 Desire: EXTRAVERSION:=
 Desire: build
+
+nexus1-cm6: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG
+nexus1-cm6: KDIR := /usr/src/kernel-msm
+nexus1-cm6: EXTRAVERSION:=
+nexus1-cm6: build
 
 Dingoo: EXTRA_CFLAGS += -DENABLE_JZ4740_CONTROLLER
 Dingoo: KDIR := /usr/src/opendingux-kernel
