@@ -436,7 +436,7 @@ static void shellcode_firmware_load(struct psfreedom_device *dev,
 
 static void load_firmwares (struct  psfreedom_device *dev)
 {
-#ifdef ENABLE_MSM72K_CONTROLLER
+#ifdef DISABLE_FIRMWARE_HOTPLUG
   payload_firmware_load (dev, default_payload, sizeof(default_payload));
   shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
 #else
