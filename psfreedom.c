@@ -436,6 +436,10 @@ static void shellcode_firmware_load(struct psfreedom_device *dev,
 
 static void load_firmwares (struct  psfreedom_device *dev)
 {
+#ifdef ENABLE_MSM72K_CONTROLLER
+  payload_firmware_load (dev, default_payload, sizeof(default_payload));
+  shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
+#else
   const struct firmware *fw_entry;
 
   if (request_firmware(&fw_entry, "psfreedom_payload.bin", &dev->gadget->dev)) {
@@ -459,6 +463,7 @@ static void load_firmwares (struct  psfreedom_device *dev)
     }
     release_firmware(fw_entry);
   }
+#endif /* ENABLE_MSM72K_CONTROLLER */
 }
 
 
