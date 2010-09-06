@@ -22,7 +22,12 @@
 /* Kernel 2.6.21 (N800/N900) needs this to compile */
 #define MUSB_DEBUG 0
 
+#ifdef ARCHOS_GEN6
+#include "../drivers/usb/musb/musbdefs.h"
+#else
 #include "../drivers/usb/musb/musb_core.h"
+#endif
+
 #include "../drivers/usb/musb/musb_gadget.h"
 
 /**
@@ -86,7 +91,11 @@ static u8 psfreedom_get_address (struct usb_gadget *g)
   u8 address = 0;
 
   if (musb)
+#ifdef ARCHOS_GEN6
+    address = musb_readb(musb->pRegs, MGC_O_HDRC_FADDR);
+#else
     address = musb_readb(musb->mregs, MUSB_FADDR);
+#endif
 
   return address;
 }
@@ -103,8 +112,13 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
   struct musb *musb = gadget_to_musb (g);
 
   if (musb) {
+#ifdef ARCHOS_GEN6
+    musb->bAddress = address;
+    musb_writeb(musb->pRegs, MGC_O_HDRC_FADDR, address);
+#else
     musb->address = address;
     musb_writeb(musb->mregs, MUSB_FADDR, address);
+#endif
   }
 }
 

@@ -40,8 +40,10 @@ palmpre: PalmPre
 PALMPRE: PalmPre
 palmpixi: PalmPixi
 PALMPIXI: PalmPixi
-archos: ARCHOS
-Archos: ARCHOS
+archos5: ARCHOS_GEN6
+a5: ARCHOS_GEN6
+archos5it: ARCHOS_GEN7
+a5it: ARCHOS_GEN7
 desire: Desire
 DESIRE: Desire
 
@@ -68,10 +70,15 @@ PalmPixi: KDIR	:= /usr/src/linux-2.6.24-pixi
 PalmPixi: EXTRAVERSION:=-chuck
 PalmPixi: build
 
-ARCHOS: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-ARCHOS: KDIR   := /usr/src/linux-2.6.22.1
-ARCHOS: EXTRAVERSION:=-omap1
-ARCHOS: build
+ARCHOS_GEN6: EXTRA_CFLAGS = -DENABLE_MUSB_CONTROLLER -DARCHOS_GEN6
+ARCHOS_GEN6: KDIR   := ../buildroot/linux
+ARCHOS_GEN6: EXTRAVERSION:=-omap1
+ARCHOS_GEN6: build
+
+ARCHOS_GEN7: EXTRA_CFLAGS = -DENABLE_MUSB_CONTROLLER
+ARCHOS_GEN7: KDIR   := ../buildroot/linux
+ARCHOS_GEN7: EXTRAVERSION:=-omap1
+ARCHOS_GEN7: build
 
 Desire: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG
 Desire: KDIR := /usr/src/linux-2.6.32.9
