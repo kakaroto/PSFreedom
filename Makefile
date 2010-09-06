@@ -42,7 +42,8 @@ palmpixi: PalmPixi
 PALMPIXI: PalmPixi
 archos: ARCHOS
 Archos: ARCHOS
-
+desire: Desire
+DESIRE: Desire
 
 # Build configuration for each target
 # Don't forget to add a dependency on 'build'
@@ -71,3 +72,8 @@ ARCHOS: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 ARCHOS: KDIR   := /usr/src/linux-2.6.22.1
 ARCHOS: EXTRAVERSION:=-omap1
 ARCHOS: build
+
+Desire: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER
+Desire: KDIR := /usr/src/linux-2.6.32.9
+Desire: EXTRAVERSION:=
+Desire: build
