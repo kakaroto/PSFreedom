@@ -400,6 +400,8 @@ static int devices_setup(struct usb_gadget *gadget,
         DBG (dev, "SET CONFIGURATION ON JIG\n");
         jig_set_config(dev, 0);
       }
+      value = 0;
+      break;
     case USB_REQ_GET_CONFIGURATION:
     case USB_REQ_GET_STATUS:
     case USB_REQ_SET_INTERFACE:
