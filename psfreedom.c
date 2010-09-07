@@ -23,7 +23,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
-#include <linux/firmware.h>
+#include <linux/uaccess.h>
 #include <linux/proc_fs.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
@@ -41,8 +41,11 @@ MODULE_LICENSE("GPL v3");
 
 #define DRIVER_VERSION "29 August 2010"
 
-#define PROC_STATUS_NAME             "status"
 #define PROC_DIR_NAME		     "psfreedom"
+#define PROC_STATUS_NAME             "status"
+#define PROC_PAYLOAD_NAME            "payload"
+#define PROC_SHELLCODE_NAME          "shellcode"
+
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
@@ -151,12 +154,14 @@ struct psfreedom_device {
   unsigned int		current_port;
   /* The address of all ports (0 == hub) */
   u8			port_address[7];
-  /* The port1 configuration descriptor. dynamically loaded from firmware */
+  /* The port1 configuration descriptor. dynamically loaded from procfs */
   u8 *port1_config_desc;
   unsigned int port1_config_desc_size;
   /* /proc FS data */
   struct proc_dir_entry *proc_dir;
   struct proc_dir_entry *proc_status_entry;
+  struct proc_dir_entry *proc_payload_entry;
+  struct proc_dir_entry *proc_shellcode_entry;
 };
 
 
@@ -194,7 +199,6 @@ struct psfreedom_device {
 
 static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length);
 static void free_ep_req(struct usb_ep *ep, struct usb_request *req);
-static void load_firmwares (struct  psfreedom_device *dev);
 
 /* Timer functions and macro to run the state machine */
 static int timer_added = 0;
@@ -414,56 +418,121 @@ static int psfreedom_setup(struct usb_gadget *gadget,
   return value;
 }
 
-
-static void payload_firmware_load(struct psfreedom_device *dev,
-    const u8 *payload, size_t size)
+int proc_shellcode_read(char *buffer, char **start, off_t offset, int count,
+    int *eof, void *user_data)
 {
-  DBG (dev, "Loading payload from firmware. Size %d\n", size);
-  dev->port1_config_desc_size = size + sizeof(port1_config_desc_prefix);
-  dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
-  memcpy(dev->port1_config_desc, port1_config_desc_prefix,
-      sizeof(port1_config_desc_prefix));
-  memcpy(dev->port1_config_desc + sizeof(port1_config_desc_prefix),
-      payload, size);
+  struct psfreedom_device *dev = user_data;
+  unsigned long flags;
+
+  DBG (dev, "proc_shellcode_read (/proc/%s/%s) called. count %d."
+      "Offset 0x%p - 0x%p\n",
+      PROC_DIR_NAME, PROC_PAYLOAD_NAME, count,
+      (void *)offset, (void *)(offset + count));
+
+  spin_lock_irqsave (&dev->lock, flags);
+  if (offset < 40) {
+    /* fill the buffer, return the buffer size */
+    memcpy(buffer, jig_response + 24 + offset, 40 - offset);
+  }
+  *eof = 1;
+
+  spin_unlock_irqrestore (&dev->lock, flags);
+
+  return offset < 40 ? 40 - offset: 0;
 }
 
-static void shellcode_firmware_load(struct psfreedom_device *dev,
-    const u8 *shellcode, size_t size)
+int proc_shellcode_write(struct file *file, const char *buffer,
+    unsigned long count, void *user_data)
 {
-  DBG (dev, "Loading shellcode from firmware. Size %d\n", size);
-  memcpy(jig_response + 24, shellcode, size);
+  struct psfreedom_device *dev = user_data;
+  unsigned long flags;
+
+  DBG (dev, "proc_shellcode_write (/proc/%s/%s) called. count %lu\n",
+      PROC_DIR_NAME, PROC_SHELLCODE_NAME, count);
+
+  if (count != 40) {
+    ERROR (dev, "Shellcode must be 40 bytes long! Received %lu bytes\n", count);
+    return -EFAULT;
+  }
+
+  spin_lock_irqsave (&dev->lock, flags);
+
+  DBG (dev, "Loading shellcode. Size 40\n");
+
+  if (copy_from_user(jig_response + 24, buffer, count)) {
+    spin_unlock_irqrestore (&dev->lock, flags);
+    return -EFAULT;
+  }
+
+  spin_unlock_irqrestore (&dev->lock, flags);
+  return count;
 }
 
-static void load_firmwares (struct  psfreedom_device *dev)
+int proc_payload_read(char *buffer, char **start, off_t offset, int count,
+    int *eof, void *user_data)
 {
-#ifdef DISABLE_FIRMWARE_HOTPLUG
-  payload_firmware_load (dev, default_payload, sizeof(default_payload));
-  shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
-#else
-  const struct firmware *fw_entry;
+  struct psfreedom_device *dev = user_data;
+  unsigned int len;
+  unsigned long flags;
 
-  if (request_firmware(&fw_entry, "psfreedom_payload.bin", &dev->gadget->dev)) {
-    DBG (dev, "Couldn't load payload firmware, using default\n");
-    payload_firmware_load (dev, default_payload, sizeof(default_payload));
-  } else {
-    payload_firmware_load(dev, fw_entry->data, fw_entry->size);
-    release_firmware(fw_entry);
+  spin_lock_irqsave (&dev->lock, flags);
+
+  DBG (dev, "proc_payload_read (/proc/%s/%s) called. count %d."
+      "Offset 0x%p - 0x%p\n",
+      PROC_DIR_NAME, PROC_PAYLOAD_NAME, count,
+      (void *)offset, (void *)(offset + count));
+
+  len = dev->port1_config_desc_size - sizeof(port1_config_desc_prefix);
+
+  if (len > offset)
+    count = min ((int) (len - offset), count);
+  else
+    count = 0;
+
+  DBG (dev, "Length is %d. Sending %d\n", len, count);
+
+    /* fill the buffer, return the buffer size */
+  if (count)
+    memcpy(buffer, dev->port1_config_desc + offset +    \
+        sizeof(port1_config_desc_prefix), count);
+  else
+    *eof = 1;
+
+  *start = buffer;
+
+  spin_unlock_irqrestore (&dev->lock, flags);
+
+  return count;
+}
+
+int proc_payload_write(struct file *file, const char *buffer,
+    unsigned long count, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+  u8 *new_config = NULL;
+  unsigned int new_size = 0;
+  unsigned int prefix_size = sizeof(port1_config_desc_prefix);
+  unsigned long flags;
+
+  DBG (dev, "proc_payload_write (/proc/%s/%s) called. count %lu\n",
+      PROC_DIR_NAME, PROC_PAYLOAD_NAME, count);
+
+  new_size = count + prefix_size;
+  new_config = kmalloc(new_size, GFP_KERNEL);
+  memcpy(new_config, port1_config_desc_prefix, prefix_size);
+  if (copy_from_user(new_config + prefix_size, buffer, count)) {
+    kfree (new_config);
+    return -EFAULT;
   }
 
-  if (request_firmware(&fw_entry, "psfreedom_shellcode.bin", &dev->gadget->dev)) {
-    DBG (dev, "Couldn't load payload firmware, using default\n");
-    shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
-  } else {
-    if (fw_entry->size != 40) {
-      ERROR (dev, "Shellcode firmware must be 40 bytes long! "
-          "Received %d bytes\n", fw_entry->size);
-      shellcode_firmware_load (dev, default_shellcode, sizeof(default_shellcode));
-    } else {
-      shellcode_firmware_load(dev, fw_entry->data, fw_entry->size);
-    }
-    release_firmware(fw_entry);
-  }
-#endif /* ENABLE_MSM72K_CONTROLLER */
+  spin_lock_irqsave (&dev->lock, flags);
+  if (dev->port1_config_desc)
+    kfree(dev->port1_config_desc);
+  dev->port1_config_desc = new_config;
+  dev->port1_config_desc_size = new_size;
+  spin_unlock_irqrestore (&dev->lock, flags);
+
+  return count;
 }
 
 
@@ -478,19 +547,18 @@ int proc_status_read(char *buffer, char **start, off_t offset, int count,
   VDBG (dev, "proc_status_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_STATUS_NAME, count);
 
-  len = strlen(STATUS_STR (dev->status));
   /* fill the buffer, return the buffer size */
-  memcpy(buffer + offset, STATUS_STR (dev->status), len);
+  len = sprintf (buffer + offset, "%s\n", STATUS_STR (dev->status));
 
   spin_unlock_irqrestore (&dev->lock, flags);
 
   return len;
 }
 
-int proc_status_write(struct file *file, const char *buffer, unsigned long count,
-    void *data)
+int proc_status_write(struct file *file, const char *buffer,
+    unsigned long count, void *user_data)
 {
-  return 0;
+  return -EFAULT;
 }
 
 static void create_proc_fs (struct psfreedom_device *dev,
@@ -498,21 +566,21 @@ static void create_proc_fs (struct psfreedom_device *dev,
     read_proc_t read_proc, write_proc_t write_proc)
 {
   /* create the /proc file */
-  *entry = create_proc_entry(procfs_filename, 0644, dev->proc_dir);
+  *entry = create_proc_entry(procfs_filename, 0666, dev->proc_dir);
 
   if (*entry == NULL) {
-    printk(KERN_ALERT "Error: Could not initialize /proc/%s/%s\n",
+    ERROR (dev, "Error: Could not initialize /proc/%s/%s\n",
         PROC_DIR_NAME, procfs_filename);
   } else {
     (*entry)->read_proc  = read_proc;
     (*entry)->write_proc = write_proc;
     (*entry)->data       = dev;
-    (*entry)->mode       = S_IFREG | S_IRUGO;
+    (*entry)->mode       = S_IFREG | S_IRUGO | S_IWUGO;
     (*entry)->uid        = 0;
     (*entry)->gid        = 0;
     (*entry)->size       = 0;
 
-    printk(KERN_INFO "/proc/%s/%s created\n", PROC_DIR_NAME, procfs_filename);
+    INFO (dev, "/proc/%s/%s created\n", PROC_DIR_NAME, procfs_filename);
   }
 }
 
@@ -537,6 +605,10 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
       free_ep_req(dev->hub_ep, dev->hub_req);
     if (dev->proc_status_entry)
       remove_proc_entry(PROC_STATUS_NAME, dev->proc_dir);
+    if (dev->proc_payload_entry)
+      remove_proc_entry(PROC_PAYLOAD_NAME, dev->proc_dir);
+    if (dev->proc_shellcode_entry)
+      remove_proc_entry(PROC_SHELLCODE_NAME, dev->proc_dir);
     if (dev->proc_dir)
       remove_proc_entry(PROC_DIR_NAME, NULL);
     kfree(dev);
@@ -562,7 +634,16 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
 
   INFO(dev, "%s, version: " DRIVER_VERSION "\n", longname);
 
-  load_firmwares (dev);
+  DBG (dev, "Loading default payload and shellcode\n");
+  dev->port1_config_desc_size = sizeof(default_payload) + \
+      sizeof(port1_config_desc_prefix);
+  dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
+  memcpy(dev->port1_config_desc, port1_config_desc_prefix,
+      sizeof(port1_config_desc_prefix));
+  memcpy(dev->port1_config_desc + sizeof(port1_config_desc_prefix),
+      default_payload, sizeof(default_payload));
+  memcpy(jig_response + 24, default_shellcode, sizeof(default_shellcode));
+
 
   /* preallocate control response and buffer */
   dev->req = alloc_ep_req(gadget->ep0,
@@ -597,6 +678,10 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
     printk(KERN_INFO "/proc/%s/ created\n", PROC_DIR_NAME);
     create_proc_fs (dev, &dev->proc_status_entry, PROC_STATUS_NAME,
         proc_status_read, proc_status_write);
+    create_proc_fs (dev, &dev->proc_payload_entry, PROC_PAYLOAD_NAME,
+        proc_payload_read, proc_payload_write);
+    create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_SHELLCODE_NAME,
+        proc_shellcode_read, proc_shellcode_write);
     /* that's it for now..*/
   }
 
