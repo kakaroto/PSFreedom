@@ -32,6 +32,7 @@ clean:
 # Aliases for platforms
 
 n900: N900
+n900-power: N900-POWER
 n800: N8x0
 N800: N8x0
 n810: N8x0
@@ -60,6 +61,11 @@ N900: KDIR := /usr/src/kernel-2.6.28/
 N900: EXTRAVERSION:=-omap1
 N900: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 N900: build
+
+N900-POWER: KDIR := /usr/src/kernel-power-2.6.28/
+N900-POWER: EXTRAVERSION:=$(shell dpkg-parsechangelog -l$(KDIR)/debian/changelog | sed -ne 's/^Version: .*-maemo\(.*\)/.10power\1/p')
+N900-POWER: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+N900-POWER: build
 
 N8x0: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 N8x0: KDIR := /usr/src/kernel-source-diablo
