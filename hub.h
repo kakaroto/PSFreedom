@@ -17,6 +17,8 @@
 #ifndef __LINUX_USB_HUB_H
 #define __LINUX_USB_HUB_H
 
+#include <linux/timer.h>
+#include <linux/jiffies.h>
 #include <linux/types.h>
 
 #define USB_DT_CS_HUB 0x29
