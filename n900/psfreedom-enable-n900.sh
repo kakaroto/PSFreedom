@@ -1,16 +1,14 @@
 #!/bin/sh
 RC=0
 
-/sbin/lsmod | grep g_file_storage > /dev/null
-if [ $? = 0 ]; then
+if grep -q g_file_storage /proc/modules; then
     logger "$0: removing g_file_storage"
     initctl emit G_FILE_STORAGE_REMOVE > /dev/null
     /sbin/rmmod g_file_storage
 fi
 
 
-/sbin/lsmod | grep g_nokia > /dev/null
-if [ $? = 0 ]; then
+if grep -q g_nokia /proc/modules; then
     logger "$0: removing g_nokia"
 
     initctl emit G_NOKIA_REMOVE > /dev/null
@@ -42,8 +40,7 @@ if [ $? = 0 ]; then
     fi
 fi
 
-/sbin/lsmod | grep psfreedom > /dev/null                         
-if [ $? != 0 ]; then                                         
+if ! grep -q psfreedom /proc/modules; then
     insmod psfreedom.ko
     RC=$?                                    
 fi                                                                   
