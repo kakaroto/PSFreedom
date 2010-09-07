@@ -44,11 +44,14 @@ if ! grep -q psfreedom /proc/modules; then
     insmod psfreedom.ko
     RC=$?                                    
 fi                                                                   
-                                                            
+
 if [ $RC != 0 ]; then                                              
     logger "$0: failed to install psfreedom module"                      
     exit 1                                                      
 fi                                                              
-                               
+
+sleep 1
+
+killall hald-addon-usb-cable 2>/dev/null || logger "$0: hald-addon-usb-cable is not running"
 
 exit 0
