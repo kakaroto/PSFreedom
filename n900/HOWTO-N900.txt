@@ -1,4 +1,0 @@
-Type 'make n900' to build the target for the N900
-Copy the files 'psfreedom.ko', 'psfreedom-enable-n900.sh' and 'psfreedom-disable-n900.sh' to /root on your phone.
-Ssh to your phone as root, and type ./psfreedom-enable-n900.sh
-

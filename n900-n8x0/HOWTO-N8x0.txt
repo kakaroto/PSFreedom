@@ -1,0 +1,9 @@
+Follow the instructions on http://wiki.psfreedom.com/wiki/N8x0
+
+Type 'make n8x0' to build the target for the N800 or N810 ('make N800' and 'make N810' also work)
+
+Copy the files 'psfreedom.ko', 'n900-n8x0/psfreedom-enable-maemo.sh' and 'n900-n8x0/psfreedom-disable-maemo.sh' to /root on your phone.
+SSH to your phone as root (or rootsh through the terminal), and type ./psfreedom-enable-maemo.sh to enable PSFreedom.
+Once you are done, run ./psfreedom-disable-maemo.sh to reset your device to its original behavior.
+
+

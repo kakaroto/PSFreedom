@@ -38,6 +38,7 @@ n800: N8x0
 N800: N8x0
 n810: N8x0
 N810: N8x0
+n8x0: N8x0
 palmpre: PalmPre
 PALMPRE: PalmPre
 palmpixi: PalmPixi

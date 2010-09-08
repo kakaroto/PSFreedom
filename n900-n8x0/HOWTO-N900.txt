@@ -1,0 +1,9 @@
+Follow the instructions on http://wiki.psfreedom.com/wiki/N900
+
+Type 'make n900' to build the target for the N900
+
+Copy the files 'psfreedom.ko', 'n900-n8x0/psfreedom-enable-maemo.sh' and 'n900-n8x0/psfreedom-disable-maemo.sh' to /root on your phone.
+SSH to your phone as root (or rootsh through the terminal), and type ./psfreedom-enable-maemo.sh to enable PSFreedom.
+Once you are done, run ./psfreedom-disable-maemo.sh to reset your device to its original behavior.
+
+
