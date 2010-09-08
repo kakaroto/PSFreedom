@@ -546,6 +546,7 @@ int proc_version_read(char *buffer, char **start, off_t offset, int count,
   VDBG (dev, "proc_version_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_VERSION_NAME, count);
 
+  *eof = 1;
   /* fill the buffer, return the buffer size */
   return sprintf (buffer + offset, "%s\n", PSFREEDOM_VERSION);
 }
@@ -561,6 +562,7 @@ int proc_status_read(char *buffer, char **start, off_t offset, int count,
   VDBG (dev, "proc_status_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_STATUS_NAME, count);
 
+  *eof = 1;
   /* fill the buffer, return the buffer size */
   len = sprintf (buffer + offset, "%s\n", STATUS_STR (dev->status));
 
