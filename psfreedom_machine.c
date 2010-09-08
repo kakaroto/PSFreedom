@@ -129,6 +129,12 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 
 #ifdef ENABLE_MSM72K_CONTROLLER
 
+/* Hack Alert: This was needed because for some
+   unknown reason, container_of() would return a
+   ui that diddn't contain the address information we wanted.
+   This uses the offset from the usb_gadget supplied to find
+   our value. Should hold while usb_info remains the same.
+*/
 #define UI_GADGET_OFFSET 1724
 #define USBDEVADDR (readu((unsigned)g - UI_GADGET_OFFSET) + 0x0154)
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
