@@ -40,9 +40,11 @@ MODULE_AUTHOR("Youness Alaoui (KaKaRoTo)");
 MODULE_LICENSE("GPL v3");
 
 #define DRIVER_VERSION "29 August 2010"
+#define PSFREEDOM_VERSION "1.0"
 
 #define PROC_DIR_NAME		     "psfreedom"
 #define PROC_STATUS_NAME             "status"
+#define PROC_VERSION_NAME             "version"
 #define PROC_PAYLOAD_NAME            "payload"
 #define PROC_SHELLCODE_NAME          "shellcode"
 
@@ -160,6 +162,7 @@ struct psfreedom_device {
   /* /proc FS data */
   struct proc_dir_entry *proc_dir;
   struct proc_dir_entry *proc_status_entry;
+  struct proc_dir_entry *proc_version_entry;
   struct proc_dir_entry *proc_payload_entry;
   struct proc_dir_entry *proc_shellcode_entry;
 };
@@ -535,6 +538,17 @@ int proc_payload_write(struct file *file, const char *buffer,
   return count;
 }
 
+int proc_version_read(char *buffer, char **start, off_t offset, int count,
+    int *eof, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+
+  VDBG (dev, "proc_version_read (/proc/%s/%s) called. count %d\n",
+      PROC_DIR_NAME, PROC_VERSION_NAME, count);
+
+  /* fill the buffer, return the buffer size */
+  return sprintf (buffer + offset, "%s\n", PSFREEDOM_VERSION);
+}
 
 int proc_status_read(char *buffer, char **start, off_t offset, int count,
     int *eof, void *user_data)
@@ -604,6 +618,8 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
       free_ep_req(dev->hub_ep, dev->hub_req);
     if (dev->proc_status_entry)
       remove_proc_entry(PROC_STATUS_NAME, dev->proc_dir);
+    if (dev->proc_version_entry)
+      remove_proc_entry(PROC_VERSION_NAME, dev->proc_dir);
     if (dev->proc_payload_entry)
       remove_proc_entry(PROC_PAYLOAD_NAME, dev->proc_dir);
     if (dev->proc_shellcode_entry)
@@ -631,7 +647,8 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
 
-  INFO(dev, "%s, version: " DRIVER_VERSION "\n", longname);
+  INFO(dev, "%s, version: " PSFREEDOM_VERSION " - " DRIVER_VERSION "\n",
+      longname);
 
   DBG (dev, "Loading default payload and shellcode\n");
   dev->port1_config_desc_size = sizeof(default_payload) + \
@@ -677,6 +694,8 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
     printk(KERN_INFO "/proc/%s/ created\n", PROC_DIR_NAME);
     create_proc_fs (dev, &dev->proc_status_entry, PROC_STATUS_NAME,
         proc_status_read, NULL);
+    create_proc_fs (dev, &dev->proc_version_entry, PROC_VERSION_NAME,
+        proc_version_read, NULL);
     create_proc_fs (dev, &dev->proc_payload_entry, PROC_PAYLOAD_NAME,
         proc_payload_read, proc_payload_write);
     create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_SHELLCODE_NAME,
