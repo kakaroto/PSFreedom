@@ -64,7 +64,7 @@ N900: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 N900: build
 
 N900-POWER: KDIR := /usr/src/kernel-power-2.6.28/
-N900-POWER: EXTRAVERSION:=$(shell if [ -f $(KDIR)/debian/changlog ]; then \
+N900-POWER: EXTRAVERSION:=$(shell if [ -f $(KDIR)/debian/changelog ]; then \
 	 dpkg-parsechangelog -l$(KDIR)/debian/changelog | sed -ne 's/^Version: .*-maemo\(.*\)/.10power\1/p'; \
 	fi)
 N900-POWER: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
