@@ -129,19 +129,24 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 
 #ifdef ENABLE_MSM72K_CONTROLLER
 
-#define USBDEVADDR ((unsigned)ui->addr + 0x0154)
+#define UI_GADGET_OFFSET 1724
+#define USBDEVADDR (readu((unsigned)g - UI_GADGET_OFFSET) + 0x0154)
 #define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
+
+
 
 static inline void writel(unsigned long l, unsigned long addr)
 {
 	*(volatile unsigned long __force *)addr = l;
 }
-
 static inline unsigned long readl(unsigned long addr)
 {
 	return *(volatile unsigned long __force *)addr;
 }
-
+static inline unsigned readu(unsigned addr)
+{
+	return *(volatile unsigned __force *)addr;
+}
 struct msm_request {
 	struct usb_request req;
 
@@ -243,7 +248,6 @@ struct usb_info {
 
 	u8 remote_wakeup;
 };
-
 static int psfreedom_is_high_speed (void)
 {
   return 1;

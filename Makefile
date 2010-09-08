@@ -112,3 +112,8 @@ Dingoo: EXTRA_CFLAGS += -DENABLE_JZ4740_CONTROLLER
 Dingoo: KDIR := /usr/src/opendingux-kernel
 Dingoo: EXTRAVERSION:=
 Dingoo: build
+
+Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER
+Evo: KDIR := /usr/src/Supersonic-2.6.32
+Evo: EXTRAVERSION:=
+Evo: build
