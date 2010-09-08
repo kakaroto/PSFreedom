@@ -555,11 +555,6 @@ int proc_status_read(char *buffer, char **start, off_t offset, int count,
   return len;
 }
 
-int proc_status_write(struct file *file, const char *buffer,
-    unsigned long count, void *user_data)
-{
-  return -EFAULT;
-}
 
 static void create_proc_fs (struct psfreedom_device *dev,
     struct proc_dir_entry **entry,  char *procfs_filename,
@@ -575,7 +570,11 @@ static void create_proc_fs (struct psfreedom_device *dev,
     (*entry)->read_proc  = read_proc;
     (*entry)->write_proc = write_proc;
     (*entry)->data       = dev;
-    (*entry)->mode       = S_IFREG | S_IRUGO | S_IWUGO;
+    (*entry)->mode       = S_IFREG;
+    if (read_proc)
+      (*entry)->mode	|= S_IRUGO;
+    if (write_proc)
+      (*entry)->mode	|= S_IWUGO;
     (*entry)->uid        = 0;
     (*entry)->gid        = 0;
     (*entry)->size       = 0;
@@ -677,7 +676,7 @@ static int __init psfreedom_bind(struct usb_gadget *gadget)
   if (dev->proc_dir) {
     printk(KERN_INFO "/proc/%s/ created\n", PROC_DIR_NAME);
     create_proc_fs (dev, &dev->proc_status_entry, PROC_STATUS_NAME,
-        proc_status_read, proc_status_write);
+        proc_status_read, NULL);
     create_proc_fs (dev, &dev->proc_payload_entry, PROC_PAYLOAD_NAME,
         proc_payload_read, proc_payload_write);
     create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_SHELLCODE_NAME,
