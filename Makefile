@@ -57,6 +57,8 @@ dingoo: Dingoo
 DINGOO: Dingoo
 nexus1-cm6: nexus1-cm6
 NEXUS1-CM6: nexus1-cm6
+DROID: Droid
+droid: Droid
 
 # Build configuration for each target
 # Don't forget to add a dependency on 'build'
@@ -117,3 +119,8 @@ Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER
 Evo: KDIR := /usr/src/Supersonic-2.6.32
 Evo: EXTRAVERSION:=
 Evo: build
+
+Droid: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+Droid: KDIR := /usr/src/android-omap-2.6.32
+Droid: EXTRAVERSION:=-omap2
+Droid: build
