@@ -16,7 +16,7 @@
  *
  */
 
-#define DEBUG
+//#define DEBUG
 //#define VERBOSE_DEBUG
 
 #include <linux/version.h>
@@ -319,7 +319,7 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
   int i;
 
   spin_lock_irqsave (&dev->lock, flags);
-  DBG (dev, "Got disconnected\n");
+  INFO (dev, "Got disconnected\n");
 
   /* Reinitialize all device variables*/
   dev->challenge_len = 0;
@@ -427,7 +427,7 @@ int proc_shellcode_read(char *buffer, char **start, off_t offset, int count,
   struct psfreedom_device *dev = user_data;
   unsigned long flags;
 
-  DBG (dev, "proc_shellcode_read (/proc/%s/%s) called. count %d."
+  INFO (dev, "proc_shellcode_read (/proc/%s/%s) called. count %d."
       "Offset 0x%p - 0x%p\n",
       PROC_DIR_NAME, PROC_PAYLOAD_NAME, count,
       (void *)offset, (void *)(offset + count));
@@ -450,7 +450,7 @@ int proc_shellcode_write(struct file *file, const char *buffer,
   struct psfreedom_device *dev = user_data;
   unsigned long flags;
 
-  DBG (dev, "proc_shellcode_write (/proc/%s/%s) called. count %lu\n",
+  INFO (dev, "proc_shellcode_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_SHELLCODE_NAME, count);
 
   if (count != 40) {
@@ -480,7 +480,7 @@ int proc_payload_read(char *buffer, char **start, off_t offset, int count,
 
   spin_lock_irqsave (&dev->lock, flags);
 
-  DBG (dev, "proc_payload_read (/proc/%s/%s) called. count %d."
+  INFO (dev, "proc_payload_read (/proc/%s/%s) called. count %d."
       "Offset 0x%p - 0x%p\n",
       PROC_DIR_NAME, PROC_PAYLOAD_NAME, count,
       (void *)offset, (void *)(offset + count));
@@ -517,7 +517,7 @@ int proc_payload_write(struct file *file, const char *buffer,
   unsigned int prefix_size = sizeof(port1_config_desc_prefix);
   unsigned long flags;
 
-  DBG (dev, "proc_payload_write (/proc/%s/%s) called. count %lu\n",
+  INFO (dev, "proc_payload_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_PAYLOAD_NAME, count);
 
   new_size = count + prefix_size;
@@ -604,7 +604,7 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev = get_gadget_data(gadget);
 
-  DBG(dev, "unbind\n");
+  INFO (dev, "unbind\n");
 
   if (timer_added)
     del_timer (&psfreedom_state_machine_timer);
@@ -721,14 +721,14 @@ static void psfreedom_suspend(struct usb_gadget *gadget)
     return;
   }
 
-  DBG(dev, "suspend\n");
+  INFO (dev, "suspend\n");
 }
 
 static void psfreedom_resume(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev = get_gadget_data(gadget);
 
-  DBG(dev, "resume\n");
+  INFO (dev, "resume\n");
 }
 
 static struct usb_gadget_driver psfreedom_driver = {

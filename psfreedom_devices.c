@@ -201,7 +201,7 @@ static int set_jig_config(struct psfreedom_device *dev)
   }
   dev->out_ep->driver_data = dev;
 
-  DBG (dev, "Enabled BULK OUT endpoint\n");
+  INFO (dev, "Enabled BULK OUT endpoint\n");
 
   err = usb_ep_enable(dev->in_ep, &jig_in_endpoint_desc);
   if (err) {
@@ -210,7 +210,7 @@ static int set_jig_config(struct psfreedom_device *dev)
   }
   dev->in_ep->driver_data = dev;
 
-  DBG (dev, "Enabled BULK IN endpoint\n");
+  INFO (dev, "Enabled BULK IN endpoint\n");
 
   jig_interrupt_start (dev);
 fail:
