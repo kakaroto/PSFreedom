@@ -59,6 +59,8 @@ nexus1-cm6: nexus1-cm6
 NEXUS1-CM6: nexus1-cm6
 DROID: Droid
 droid: Droid
+Incredible: Inc
+incredible: Inc
 
 # Build configuration for each target
 # Don't forget to add a dependency on 'build'
@@ -124,3 +126,8 @@ Droid: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 Droid: KDIR := /usr/src/android-omap-2.6.32
 Droid: EXTRAVERSION:=-omap2
 Droid: build
+
+Inc: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER
+Inc: KDIR := /usr/src/incrediblec-2.6.32.15
+Inc: EXTRAVERSION:=
+Inc: build
