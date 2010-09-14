@@ -1,0 +1,3 @@
+[submodule "ps3toolchain"]
+	path = ps3toolchain
+	url = git://github.com/ooPo/ps3toolchain.git
