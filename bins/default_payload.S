@@ -49,9 +49,9 @@
 #define LOAD_LABEL2(dest, source, address) \
 	LOAD_LABEL(MEM_BASE2, dest, source, ADDR_IN_MEM2 (address))
 #define LOADI_LABEL1(dest, address) \
-	LOAD_LABEL(MEM_BASE1, dest, dest, ADDR_IN_MEM1 (address))
+	LOAD_LABEL1(dest, dest, address)
 #define LOADI_LABEL2(dest, address) \
-	LOAD_LABEL(MEM_BASE2, dest, dest, ADDR_IN_MEM2 (address))
+	LOAD_LABEL2(dest, dest, address)
 	
 #define LOAD_MEM_BASE1(dest) \
 	MEM_BASE (dest) \
@@ -63,7 +63,7 @@
 // Add system calls. Use only in exploit_main because of registers used...
 #define ADD_SYSCALL(ptr, num) \
 	LOAD_LABEL2 (%r3, %r31, ptr) \
-	LOAD_LABEL (0, %r4, %r31, syscall_table) \
+	LOAD_ABS (%r4, %r31, syscall_table) \
 	std	%r3, 0x08*num(%r4) \
 
 	
@@ -86,6 +86,8 @@
 #define PATCH_INST(offset, instruction...) .long offset; instruction
 #define PATCH_DATA(offset, data...) .long offset; .long data
 #define PATCH_BRANCH(offset, op, target) .long offset; op (target - offset)
+#define PATCH_BRANCH_MEM2(offset, op, target) \
+	PATCH_BRANCH (offset, op, MEM_BASE2 + ADDR_IN_MEM2(target))
 
 	
 	// payload_entry:
@@ -116,7 +118,7 @@ payload_entry:				// This is the entry point that gets
 					// start of this page
 	li	%r5, PAGE_SIZE		// Set %r5 to the end of this page
 	LOAD_MEM_BASE1(%r4)		// Load 0x8000000000700000 into %r4
-payload_copy:
+l_payload_copy:
 	subi	%r5, %r5, 8		// set %r5 to read the previous quad
 	ldx	%r6, %r3, %r5		// Copy quad content of %r3[%r5] to %r6
 	stdx	%r6, %r4, %r5		// Store quad %r6 to *%r4
@@ -155,7 +157,6 @@ exploit_main:
 	std	%r30, 0x90(%r1)
 	std	%r31, 0x98(%r1)
 	std	%r0, 0xb0(%r1)
-	b	l_patches_applied
 	MEM_BASE (%r31)			// Load 0x8000000000000000 in %r31
 	LOAD_LABEL(MEM_BASE2, %r3, %r31, 0)	// Load MEM_BASE2 in %r3
 	// Copy functions that need to stay resident in memory to MEM_BASE2
@@ -163,11 +164,11 @@ exploit_main:
 	li	%r5, RESIDENT_PAYLOAD_SIZE
 	bl	ABSOLUTE_MEM1(memcpy)
 	// Add kernel module for device6
-	//LOAD_LABEL2 (%r3, %r31, kernel_module_struct)
-	//bl	ABSOLUTE_MEM1(add_kernel_module)
+	LOAD_LABEL2 (%r3, %r31, kernel_module_struct)
+	bl	ABSOLUTE_MEM1(add_kernel_module)
 	// Add system call 36 for backup manager
-	//ADD_SYSCALL (syscall36_ptr, 36)
-	//LOAD_LABEL1 (%r5, %r31, patch_table)
+	ADD_SYSCALL (syscall36_ptr, 36)
+	LOAD_LABEL1 (%r5, %r31, patch_table)
 l_apply_patches_loop:
 	lwz	%r3, 0(%r5)	// If entry in patch table is NULL, we're done
 	cmplwi	%r3, 0
@@ -203,8 +204,8 @@ patch_table:
 	PATCH_INST(0x0490e0, ld %r4, 0xf08(%r2))
 	PATCH_INST(0x0490e4, ld %r3, 0x20(%r28))
 	PATCH_INST(0x0490e8, std %r3, 0(%r4))
-//	PATCH_BRANCH(0x04f0a8, bl, MEM_BASE2 + ADDR_IN_MEM2(address))
-//	PATCH_BRANCH(0x2aafc8, b, MEM_BASE2 + ADDR_IN_MEM2(address))
+	PATCH_BRANCH_MEM2 (0x04f0a8, bl, memory_patching_desc)
+	PATCH_BRANCH_MEM2 (0x2aafc8, b, hook_open_desc)
 	PATCH_INST(0x04ed18, li %r4, 0)
 	PATCH_INST(0x04ed1c, stw %r4, 0(%r3))
 	PATCH_INST(0x04ed20, blr)
@@ -256,6 +257,7 @@ game_path:
 game_path_end:	
 	.quad 0
 flags:	
+	.long 0
 	.long 0
 	
 	//
@@ -446,8 +448,8 @@ hook_open:
 	std	%r0, 0xb0(%r1)
 	mr	%r28, %r4
 	mr	%r29, %r3
-	MEM_BASE(%r31)
-	LOAD_LABEL2(%r4, %r31, hook_path)
+	MEM_BASE (%r31)
+	LOAD_LABEL2 (%r4, %r31, hook_path)
 	li	%r5, (hook_path_end - hook_path)
 	bl	ABSOLUTE_MEM2(strncmp)
 	cmpldi	%r3, 0
@@ -570,28 +572,15 @@ loc_594:
 	mtlr	%r0
 	blr
 
-// FIXME: maybe this needs a specific offset ?
-.org UNKNOWN_HOOK_BIN_OFFSET
-some_other_hooked_function:	
-	stdu	%r1, -0xb0(%r1)
-	mflr	%r0
-	std	%r30, 0xa0(%r1)
-	std	%r31, 0xa8(%r1)
-	std	%r29, 0x98(%r1)
-	std	%r0, 0xc0(%r1)
-	li	%r30, 0xfa0
-	li	%r31, 0xc8
-	b	ABSOLUTE_MEM2(0xab04)
-
 memory_patch_table:	
 	.quad	0xa0556f3d002cb8fd
-	QUAD_MEM2(memory_patch_table1)
+	QUAD_MEM2(memory_patch_table_1)
 	.quad	0x8c0a948c000d99b1
-	QUAD_MEM2(memory_patch_table3)
+	QUAD_MEM2(memory_patch_table_3)
 	.quad	0xa2bc1a5600052adc
-	QUAD_MEM2(memory_patch_table4)
+	QUAD_MEM2(memory_patch_table_4)
 	.quad	0x6b70280200020017
-	QUAD_MEM2(memory_patch_table2)
+	QUAD_MEM2(memory_patch_table_2)
 	.quad	0x0000000000000000
 memory_patch_table_1:	
 	.quad	0x0030535438600082
