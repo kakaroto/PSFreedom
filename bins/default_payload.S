@@ -13,17 +13,14 @@
 #define unknown_func1		0xd29c4 // FIXME
 #define unknown_func2		0xd292c // FIXME
 	
-#define MAGIC_NUMBER		0x505346726565646d
 #define PAGE_SIZE 		0x1000
 #define RET1_OFFSET 		0x1ac
-#define PAYLOAD_OFFSET_IN_PAGE 	0x18
-#define MAGIC_NUMBER_LENGTH	payload_entry - payload_start
-#define CODE_OFFSET_IN_PAGE 	(PAYLOAD_OFFSET_IN_PAGE + MAGIC_NUMBER_LENGTH)
+#define PAYLOAD_OFFSET_IN_PAGE 	0x20
 #define PAYLOAD_SIZE		ADDR_IN_PAGE(payload_end)
 #define RESIDENT_PAYLOAD_OFFSET	(overwritten_kernel_function)
 #define RESIDENT_PAYLOAD_SIZE   (payload_end - RESIDENT_PAYLOAD_OFFSET)
 #define UNKNOWN_HOOK_BIN_OFFSET	(MEM_BASE3-MEM_BASE2+RESIDENT_PAYLOAD_OFFSET)
-#define ADDR_IN_PAGE(target) 	(CODE_OFFSET_IN_PAGE + (target) - payload_entry)
+#define ADDR_IN_PAGE(target) 	(PAYLOAD_OFFSET_IN_PAGE + (target) - payload_entry)
 #define ADDR_IN_MEM1(target) 	(ADDR_IN_PAGE(target))
 #define ADDR_IN_MEM2(target) 	((target) - RESIDENT_PAYLOAD_OFFSET)
 
@@ -106,9 +103,7 @@
 	//   goto MEM_BASE1 + exploit_main;
 	//  }
 .org 0
-payload_start:	
-	// Position 0x18 in the page
-	.quad	MAGIC_NUMBER
+payload_start:
 	// Position 0x20 in the page
 payload_entry:				// This is the entry point that gets
 					// branched to from the shellcode
@@ -437,6 +432,8 @@ l_game_path_null:
 	//    
 	//    return original_open (path, mode);
 	//  }	
+// need to -1 to not count trailing \x00 from hook_path
+#define HOOK_PATH_LEN (hook_path_end - hook_path - 1)
 hook_open:
 	stdu	%r1, -0xa0(%r1)
 	mflr	%r0
@@ -605,9 +602,7 @@ memory_patch_table_4:
 
 hook_path:	
 	.string "PSFreedom"
-hook_path_end:
-	 // need to -1 to not count trailing \x00
-#define HOOK_PATH_LEN (hook_path_end - hook_path - 1)
+hook_path_end:	
 kernel_module_name:	
 	.string "mod"
 payload_end:
