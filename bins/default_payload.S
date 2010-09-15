@@ -450,7 +450,7 @@ hook_open:
 	mr	%r29, %r3
 	MEM_BASE (%r31)
 	LOAD_LABEL2 (%r4, %r31, hook_path)
-	li	%r5, (hook_path_end - hook_path)
+	li	%r5, HOOK_PATH_LEN
 	bl	ABSOLUTE_MEM2(strncmp)
 	cmpldi	%r3, 0
 	bne	l_proceed
@@ -459,7 +459,7 @@ hook_open:
 	cmpldi	%r3, 0
 	beq	l_proceed
 	ld	%r3, 8(%r31)
-	addi	%r4, %r29, (hook_path_end - hook_path)
+	addi	%r4, %r29, HOOK_PATH_LEN
 	bl	ABSOLUTE_MEM2(strcpy)
 	ld	%r29, 0(%r31)
 l_proceed:
@@ -605,7 +605,9 @@ memory_patch_table_4:
 
 hook_path:	
 	.string "PSFreedom"
-hook_path_end:	
+hook_path_end:
+	 // need to -1 to not count trailing \x00
+#define HOOK_PATH_LEN (hook_path_end - hook_path - 1)
 kernel_module_name:	
 	.string "mod"
 payload_end:
