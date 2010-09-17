@@ -2,12 +2,31 @@ PSFreedom - PS3 Jailbreak linux kernel
 by KaKaRoTo
 
 ----
-This linux kernel module should work on the N900 (RX51 machine).
-It uses the musb driver to access the address of the usb and modify it.
+PSFreedom is a Linux kernel module and should work on most Linux devices with
+a controller supporting slave mode and that allows us to access and modify
+the USB Address of the controller.
+The MUSB, MSM72K  musb driver to access the address of the usb and modify it.
 
-If you want to port this, have a look at psfreedom_machine.c and implement the
-missing functions for your device. Make it compile-time #ifdef and modify
-the Makefile.
+Please check the wiki for a list of compatible devices, how to use PSFreedom,
+how to contribute and how to port it to new devices : http://wiki.psfreedom.com/wiki/
 
-To compile, type 'make' inside scratchbox.
+To compile, type 'make <platform>' inside the platform's SDK environment.
+
+
+====== How to Use PSFreedom =====
+Note: PSFreedom only works with firmware 3.41 at the moment! 
+- First, you need to know if PSFreedom works on your device, so go to the
+  Device compatibility list (http://wiki.psfreedom.com/wiki/Device_compatibility_list)
+  and verify that your device is in there 
+- Once you found your device in the list, and it is set as 'Complete, then click on
+  the device name in the wiki page to go to that device's page 
+- Follow the device specific instructions for getting PSFreedom on your device. 
+- Once you're ready, turn the switch off in the back of your Playstation 3 or unplug the power cord. 
+- Make sure there are no other USB devices plugged into the PS3 (USB Stick, Sixaxis Controller, etc.). 
+- Then plug in your device and plug in the power cord of the PS3 or flip the switch back on. 
+- Once you have that done, quickly press the power then immediately after press the eject button (as fast as you can). 
+- You will know it work when it takes a slightly longer time (about 5 seconds more) to turn on. 
+- The PS3 should boot up and you will see two new options in the games portion of the XMB (cross media bar). 
+- That's it, you've rooted your PS3, and you are ready to install Homebrew applications! 
+- You can now safely disconnect your device and return it to normal operation mode while enjoying this exploit.
 
