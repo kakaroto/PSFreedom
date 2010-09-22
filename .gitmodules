@@ -1,3 +1,6 @@
 [submodule "ps3toolchain"]
 	path = ps3toolchain
 	url = git://github.com/ooPo/ps3toolchain.git
+[submodule "pl3"]
+	path = pl3
+	url = git://github.com/kakaroto/PL3.git

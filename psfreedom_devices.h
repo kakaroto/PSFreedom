@@ -11,8 +11,8 @@
  *
  */
 
-#include "bins/default_shellcode.h"
-#include "bins/default_payload.h"
+#include "pl3/default_shellcode.h"
+#include "pl3/default_payload.h"
 
 #define MAGIC_NUMBER		0x50, 0x53, 0x46, 0x72, 0x65, 0x65, 0x64, 0x6d
 
