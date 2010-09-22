@@ -10,7 +10,8 @@ The MUSB, MSM72K  musb driver to access the address of the usb and modify it.
 Please check the wiki for a list of compatible devices, how to use PSFreedom,
 how to contribute and how to port it to new devices : http://wiki.psfreedom.com/wiki/
 
-To compile, type 'make <platform>' inside the platform's SDK environment.
+To compile, first make sure that the pl3 submodule is correctly fetched and compiled then
+type 'make <platform>' inside the platform's SDK environment.
 
 
 ====== How to Use PSFreedom =====
