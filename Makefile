@@ -24,6 +24,7 @@ endif
 #Build rules
 
 build:
+	if [ "x$(GENERATE_BINS)" == "x1" ]; then $(MAKE) -C bins; fi
 	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=${EXTRAVERSION} modules
 
 clean:
