@@ -16,9 +16,8 @@
  *
  */
 
-// Define these in the makefile
-//#define DEBUG
-//#define VERBOSE_DEBUG
+#include "config.h"
+
 
 #include <linux/version.h>
 #include <linux/module.h>
@@ -34,6 +33,7 @@
 #include <linux/usb.h>
 #include <linux/usb_gadget.h>
 #endif
+
 
 /*-------------------------------------------------------------------------*/
 
@@ -264,7 +264,12 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       break;
     case DEVICE3_DISCONNECTED:
       dev->status = DEVICE5_WAIT_DISCONNECT;
+      /* If not using JIG mode, then no need to unplug the JIG, since we'll
+         need to keep it in memory so we can find its address from an lv2 dump
+       */
+#ifdef USE_JIG
       hub_disconnect_port (dev, 5);
+#endif
       break;
     case DEVICE5_DISCONNECTED:
       dev->status = DEVICE4_WAIT_DISCONNECT;

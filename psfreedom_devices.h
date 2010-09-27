@@ -11,10 +11,53 @@
  *
  */
 
-#include "pl3/default_shellcode.h"
-#include "pl3/default_payload.h"
 
 #define MAGIC_NUMBER		0x50, 0x53, 0x46, 0x72, 0x65, 0x65, 0x64, 0x6d
+
+#ifdef USE_JIG
+#include "pl3/shellcode_egghunt.h"
+#include "pl3/default_payload.h"
+#define default_shellcode shellcode_egghunt
+
+#if defined (FIRMWARE_3_41)
+#define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee
+#define SHELLCODE_ADDR_LOW	0x70
+#elif defined (FIRMWARE_3_01)
+#define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xFB
+#define SHELLCODE_ADDR_LOW	0xC8
+#else
+#error "If you want to use the JIG mode, you must specify the firmware." \
+  " define FIRMWARE_3_41 or FIRMWARE_3_01 in the makefile and recompile."
+#endif /* FIRMWARE_X_YZ */
+
+#define SHELLCODE_PAGE		0x80, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00
+#define SHELLCODE_DESTINATION	SHELLCODE_ADDR_HIGH, SHELLCODE_ADDR_LOW
+#define SHELLCODE_PTR 		SHELLCODE_ADDR_HIGH, SHELLCODE_ADDR_LOW + 0x08
+#define SHELLCODE_ADDRESS	SHELLCODE_ADDR_HIGH, SHELLCODE_ADDR_LOW + 0x18
+
+#define PORT1_NUM_CONFIGS	4
+
+#else /* USE_JIG */
+
+#include "pl3/default_shellcode.h"
+#include "pl3/dump_lv2.h"
+#define default_payload dump_lv2
+
+#define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x4D, 0x00
+//#define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x5B, 0x00
+//#define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x45, 0x00
+#define SHELLCODE_ADDR_LOW	0x00
+
+#define SHELLCODE_PAGE		SHELLCODE_ADDR_HIGH, SHELLCODE_ADDR_LOW
+#define SHELLCODE_DESTINATION	SHELLCODE_ADDR_HIGH, SHELLCODE_ADDR_LOW + 0x20
+#define SHELLCODE_PTR 		SHELLCODE_ADDR_HIGH, SHELLCODE_ADDR_LOW + 0x28
+#define SHELLCODE_ADDRESS	SHELLCODE_ADDR_HIGH, SHELLCODE_ADDR_LOW + 0x38
+
+#define PORT1_NUM_CONFIGS	100
+
+#endif /* USE_JIG */
+
+#define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20
 
 /* Hub endpoint Descriptor */
 static struct usb_endpoint_descriptor jig_out_endpoint_desc = {
@@ -37,15 +80,15 @@ static struct usb_endpoint_descriptor jig_in_endpoint_desc = {
 };
 
 static u8 jig_response[64] = {
-  0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee, 0x78,
-  0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee, 0x88,
-  0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20,
+  SHELLCODE_PTR,
+  SHELLCODE_ADDRESS,
+  RTOC_TABLE
 };
 
 static u8 port1_device_desc[] = {
   0x12, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x08,
   0xAA, 0xAA, 0x55, 0x55, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x04,
+  0x00, PORT1_NUM_CONFIGS,
 };
 
 static u8 port1_short_config_desc[] = {
@@ -55,7 +98,13 @@ static u8 port1_short_config_desc[] = {
 static u8 port1_config_desc_prefix[] = {
   0x09, 0x02, 0x12, 0x00, 0x01, 0x00, 0x00, 0x80, 0xfa,
   0x09, 0x04, 0x00, 0x00, 0x00, 0xfe, 0x01, 0x02, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, MAGIC_NUMBER
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  MAGIC_NUMBER,
+#ifndef USE_JIG
+  SHELLCODE_PTR,
+  SHELLCODE_ADDRESS,
+  RTOC_TABLE
+#endif
 };
 
 static u8 port2_device_desc[] = {
@@ -408,8 +457,8 @@ static u8 port4_config_desc_3[] = {
   0x09, 0x04, 0x00, 0x00, 0x00, 0xfe, 0x01, 0x02, 0x00,
   0x3e, 0x21, 0x00, 0x00, 0x00, 0x00,
   MAGIC_NUMBER, /* magic number to look for in the start of the page */
-  0x80, 0x00, 0x00, 0x00, 0x00, 0x46, 0x50, 0x00, /* Initial data search ptr */
-  0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee, 0x70, /* destination ptr for shellcode (jig response) */
+  SHELLCODE_PAGE, /* Initial data search ptr */
+  SHELLCODE_DESTINATION, /* destination ptr for heap structure (jig response) */
 };
 
 static u8 port5_device_desc[] = {
