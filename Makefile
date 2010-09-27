@@ -12,13 +12,13 @@ endif
 PWD	:= $(shell pwd)
 
 
-ifndef PLATFORM
+ifndef PSFREEDOM_PLATFORM
 all:
 	@echo "Please choose your platform by running 'make <platform>'." >&2
-	@echo "You can also export the PLATFORM environment variable before running 'make'" >&2
+	@echo "You can also export the PSFREEDOM_PLATFORM environment variable before running 'make'" >&2
 	@false
 else
-all: ${PLATFORM}
+all: ${PSFREEDOM_PLATFORM}
 endif
 
 #Build rules

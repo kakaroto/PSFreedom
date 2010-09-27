@@ -16,6 +16,7 @@
  *
  */
 
+// Define these in the makefile
 //#define DEBUG
 //#define VERBOSE_DEBUG
 
