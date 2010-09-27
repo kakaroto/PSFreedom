@@ -16,8 +16,8 @@
 #define USE_JIG
 
 /* Define the firmware version you want to build PSFreedom for */
-//#define FIRMWARE_3_41
-#define FIRMWARE_3_01
+#define FIRMWARE_3_41
+//#define FIRMWARE_3_01
 
 #define DEBUG
 //#define VERBOSE_DEBUG
