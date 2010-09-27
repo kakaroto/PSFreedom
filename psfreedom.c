@@ -641,7 +641,7 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 
 
 
-static int __init psfreedom_bind(struct usb_gadget *gadget)
+static int psfreedom_bind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev;
   int err = 0;
