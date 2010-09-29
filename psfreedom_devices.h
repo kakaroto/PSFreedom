@@ -14,6 +14,16 @@
 
 #define MAGIC_NUMBER		0x50, 0x53, 0x46, 0x72, 0x65, 0x65, 0x64, 0x6d
 
+#if defined (FIRMWARE_3_41)
+#define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20
+#elif defined (FIRMWARE_3_01)
+#define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x32, 0x06, 0x40
+#else
+#error "You must specify the target firmware." \
+  " define a supported FIRMWARE_X_YZ in the makefile and recompile."
+#endif /* FIRMWARE_X_YZ */
+
+
 #ifdef USE_JIG
 #include "pl3/shellcode_egghunt.h"
 #define default_shellcode shellcode_egghunt
@@ -25,9 +35,6 @@
 #elif defined (FIRMWARE_3_01)
 #define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xFB
 #define SHELLCODE_ADDR_LOW	0xC8
-#else
-#error "If you want to use the JIG mode, you must specify the firmware." \
-  " define FIRMWARE_3_41 or FIRMWARE_3_01 in the makefile and recompile."
 #endif /* FIRMWARE_X_YZ */
 
 #define SHELLCODE_PAGE		0x80, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00
@@ -57,8 +64,6 @@
 #define PORT1_NUM_CONFIGS	100
 
 #endif /* USE_JIG */
-
-#define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20
 
 /* Hub endpoint Descriptor */
 static struct usb_endpoint_descriptor jig_out_endpoint_desc = {
