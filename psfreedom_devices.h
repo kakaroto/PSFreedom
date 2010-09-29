@@ -16,8 +16,8 @@
 
 #ifdef USE_JIG
 #include "pl3/shellcode_egghunt.h"
-#include "pl3/default_payload.h"
 #define default_shellcode shellcode_egghunt
+#include "pl3/default_payload.h"
 
 #if defined (FIRMWARE_3_41)
 #define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee
@@ -39,7 +39,8 @@
 
 #else /* USE_JIG */
 
-#include "pl3/default_shellcode.h"
+#include "pl3/shellcode_egghunt.h"
+#define default_shellcode shellcode_egghunt
 #include "pl3/dump_lv2.h"
 #define default_payload dump_lv2
 
