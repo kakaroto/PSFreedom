@@ -17,4 +17,6 @@
 #define DEBUG
 //#define VERBOSE_DEBUG
 
+#define FIRMWARE_3_41
+
 #endif /* PSFREEDOM_CONFIG_H */

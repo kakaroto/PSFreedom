@@ -11,6 +11,11 @@
  *
  */
 
+#include "pl3/shellcode_egghunt.h"
+#include "pl3/default_payload_3_41.h"
+#include "pl3/default_payload_3_01.h"
+#include "pl3/dump_lv2.h"
+
 
 #define MAGIC_NUMBER		0x50, 0x53, 0x46, 0x72, 0x65, 0x65, 0x64, 0x6d
 
@@ -25,14 +30,14 @@
 
 
 #ifdef USE_JIG
-#include "pl3/shellcode_egghunt.h"
 #define default_shellcode shellcode_egghunt
-#include "pl3/default_payload.h"
 
 #if defined (FIRMWARE_3_41)
+#define default_payload default_payload_3_41
 #define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee
 #define SHELLCODE_ADDR_LOW	0x70
 #elif defined (FIRMWARE_3_01)
+#define default_payload default_payload_3_01
 #define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xFB
 #define SHELLCODE_ADDR_LOW	0xC8
 #endif /* FIRMWARE_X_YZ */
@@ -46,9 +51,7 @@
 
 #else /* USE_JIG */
 
-#include "pl3/shellcode_egghunt.h"
 #define default_shellcode shellcode_egghunt
-#include "pl3/dump_lv2.h"
 #define default_payload dump_lv2
 
 #define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x4D, 0x00
