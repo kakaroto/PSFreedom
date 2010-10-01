@@ -25,7 +25,7 @@
 #define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x32, 0x06, 0x40
 #else
 #error "You must specify the target firmware." \
-  " define a supported FIRMWARE_X_YZ in the makefile and recompile."
+  " define a supported FIRMWARE_X_YZ in config.h and recompile."
 #endif /* FIRMWARE_X_YZ */
 
 
