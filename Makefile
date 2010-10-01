@@ -62,6 +62,8 @@ DROID: Droid
 droid: Droid
 Incredible: Inc
 incredible: Inc
+evo: Evo
+EVO: Evo
 
 # Build configuration for each target
 # Don't forget to add a dependency on 'build'
@@ -118,7 +120,7 @@ Dingoo: KDIR := /usr/src/opendingux-kernel
 Dingoo: EXTRAVERSION:=
 Dingoo: build
 
-Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER
+Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DEVO_OFFSET
 Evo: KDIR := /usr/src/Supersonic-2.6.32
 Evo: EXTRAVERSION:=
 Evo: build
