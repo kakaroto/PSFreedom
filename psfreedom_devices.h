@@ -14,6 +14,7 @@
 #include "pl3/shellcode_egghunt.h"
 #include "pl3/default_payload_3_41.h"
 #include "pl3/default_payload_3_01.h"
+#include "pl3/default_payload_3_15.h"
 #include "pl3/dump_lv2.h"
 
 
@@ -39,6 +40,7 @@
 #define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee
 #define SHELLCODE_ADDR_LOW	0x70
 #elif defined (FIRMWARE_3_15)
+#define default_payload default_payload_3_15
 #define SHELLCODE_ADDR_HIGH	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xde
 #define SHELLCODE_ADDR_LOW	0x30
 #elif defined (FIRMWARE_3_01)
