@@ -675,7 +675,12 @@ static void create_proc_fs (struct psfreedom_device *dev,
     read_proc_t read_proc, write_proc_t write_proc)
 {
   /* create the /proc file */
-  *entry = create_proc_entry(procfs_filename, 0666, dev->proc_dir);
+  int permission = 0;
+  if (read_proc)
+    permission |= 0444;
+  if (write_proc)
+    permission |= 0222;
+  *entry = create_proc_entry(procfs_filename, permission, dev->proc_dir);
 
   if (*entry == NULL) {
     ERROR (dev, "Error: Could not initialize /proc/%s/%s\n",
