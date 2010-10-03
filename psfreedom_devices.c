@@ -311,10 +311,6 @@ static int devices_setup(struct usb_gadget *gadget,
               value = min(w_length, (u16) sizeof(port5_device_desc));
               memcpy(req->buf, port5_device_desc, value);
               break;
-            case 6:
-              value = min(w_length, (u16) sizeof(port6_device_desc));
-              memcpy(req->buf, port6_device_desc, value);
-              break;
             default:
               value = -EINVAL;
               break;
@@ -379,10 +375,6 @@ static int devices_setup(struct usb_gadget *gadget,
               value = sizeof(port5_config_desc);
               memcpy(req->buf, port5_config_desc, value);
               break;
-            case 6:
-              value = sizeof(port6_config_desc);
-              memcpy(req->buf, port6_config_desc, value);
-              break;
             default:
               value = -EINVAL;
               break;
@@ -415,13 +407,6 @@ static int devices_setup(struct usb_gadget *gadget,
       }
       *(u8 *)req->buf = 0;
       value = min(w_length, (u16)1);
-      break;
-
-    case 0xAA:
-      INFO (dev, "JAILBROKEN!!! DONE!!!!!!!!!\n");
-      dev->status = DEVICE6_READY;
-      SET_TIMER (0);
-      value = 0;
       break;
     default:
     unknown:
@@ -502,7 +487,6 @@ static int __init devices_bind(struct usb_gadget *gadget,
       ((struct usb_device_descriptor *)port3_device_desc)->bMaxPacketSize0 = \
       ((struct usb_device_descriptor *)port4_device_desc)->bMaxPacketSize0 = \
       ((struct usb_device_descriptor *)port5_device_desc)->bMaxPacketSize0 = \
-      ((struct usb_device_descriptor *)port6_device_desc)->bMaxPacketSize0 = \
       gadget->ep0->maxpacket;
   VDBG(dev, "devices_bind finished ok\n");
 

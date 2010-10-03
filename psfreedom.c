@@ -82,8 +82,6 @@ enum PsfreedomState {
   DEVICE5_READY,
   DEVICE5_WAIT_DISCONNECT,
   DEVICE5_DISCONNECTED,
-  DEVICE6_WAIT_READY,
-  DEVICE6_READY,
   DONE,
 };
 
@@ -111,8 +109,6 @@ enum PsfreedomState {
       s==DEVICE5_READY?"DEVICE5_READY":                         \
       s==DEVICE5_WAIT_DISCONNECT?"DEVICE5_WAIT_DISCONNECT":     \
       s==DEVICE5_DISCONNECTED?"DEVICE5_DISCONNECTED":           \
-      s==DEVICE6_WAIT_READY?"DEVICE6_WAIT_READY":               \
-      s==DEVICE6_READY?"DEVICE6_READY":                         \
       s==DONE?"DONE":                                           \
       "UNKNOWN_STATE")
 
@@ -125,7 +121,6 @@ enum PsfreedomState {
       r==0xa300?"GET_PORT_STATUS":              \
       r==0x2301?"CLEAR_PORT_FEATURE":           \
       r==0x010B?"SET_INTERFACE":                \
-      r==0x21AA?"FREEDOM":                      \
       "UNKNOWN")
 
 #include "hub.h"
@@ -298,11 +293,8 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       hub_disconnect_port (dev, 1);
       break;
     case DEVICE1_DISCONNECTED:
-      dev->status = DEVICE6_WAIT_READY;
-      hub_connect_port (dev, 6);
-      break;
-    case DEVICE6_READY:
       dev->status = DONE;
+      INFO (dev, "JAILBROKEN!!! DONE!!!!!!!!!\n");
       INFO (dev, "Congratulations, worked!");
       del_timer (&psfreedom_state_machine_timer);
       timer_added = 0;

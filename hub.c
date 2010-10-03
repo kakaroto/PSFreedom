@@ -579,10 +579,6 @@ static int hub_setup(struct usb_gadget *gadget,
                     if (w_index == 5)
                       dev->switch_to_port_delayed = w_index;
                     break;
-                  case DEVICE6_WAIT_READY:
-                    if (w_index == 6)
-                      dev->switch_to_port_delayed = w_index;
-                    break;
                   default:
                     break;
                 }
