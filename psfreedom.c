@@ -521,15 +521,22 @@ int proc_payload_write(struct file *file, const char *buffer,
   u8 *new_config = NULL;
   unsigned int new_size = 0;
   unsigned int prefix_size = sizeof(port1_config_desc_prefix);
+  unsigned int payload_size = count;
   unsigned long flags;
 
   INFO (dev, "proc_payload_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_PAYLOAD_NAME, count);
 
-  new_size = count + prefix_size;
+  if (prefix_size + payload_size > dev->port1_config_desc_size) {
+    ERROR (dev, "Error: Payload size is more than the maximum allowed of %d\n",
+        dev->port1_config_desc_size - prefix_size);
+    return -EFAULT;
+  }
+
+  new_size = 3840;
   new_config = kmalloc(new_size, GFP_KERNEL);
   memcpy(new_config, port1_config_desc_prefix, prefix_size);
-  if (copy_from_user(new_config + prefix_size, buffer, count)) {
+  if (copy_from_user(new_config + prefix_size, buffer, payload_size)) {
     kfree (new_config);
     return -EFAULT;
   }
@@ -538,7 +545,6 @@ int proc_payload_write(struct file *file, const char *buffer,
   if (dev->port1_config_desc)
     kfree(dev->port1_config_desc);
   dev->port1_config_desc = new_config;
-  dev->port1_config_desc_size = new_size;
   spin_unlock_irqrestore (&dev->lock, flags);
 
   return count;
@@ -644,6 +650,7 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 static int psfreedom_bind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev;
+  int payload_size = sizeof(default_payload);
   int err = 0;
 
   dev = kzalloc(sizeof(*dev), GFP_KERNEL);
@@ -659,13 +666,17 @@ static int psfreedom_bind(struct usb_gadget *gadget)
       longname);
 
   DBG (dev, "Loading default payload and shellcode\n");
-  dev->port1_config_desc_size = sizeof(default_payload) + \
-      sizeof(port1_config_desc_prefix);
+  dev->port1_config_desc_size = 3840;
   dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
+  if (sizeof(port1_config_desc_prefix) + payload_size > dev->port1_config_desc_size) {
+    payload_size = dev->port1_config_desc_size - sizeof(port1_config_desc_prefix);
+    ERROR (dev, "Error:Default payload size is more than the maximum allowed of %d\n",
+        payload_size);
+  }
   memcpy(dev->port1_config_desc, port1_config_desc_prefix,
       sizeof(port1_config_desc_prefix));
   memcpy(dev->port1_config_desc + sizeof(port1_config_desc_prefix),
-      default_payload, sizeof(default_payload));
+      default_payload, payload_size);
   memcpy(jig_response + 24, default_shellcode, sizeof(default_shellcode));
 
 
