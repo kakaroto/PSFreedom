@@ -14,6 +14,7 @@
 #include "pl3/shellcode_egghunt.h"
 #include "pl3/default_payload_3_41.h"
 #include "pl3/default_payload_3_01.h"
+#include "pl3/default_payload_3_10.h"
 #include "pl3/default_payload_3_15.h"
 #include "pl3/dump_lv2.h"
 
@@ -22,13 +23,13 @@
 
 #if defined (FIRMWARE_3_41)
 #define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20
-#elif defined (FIRMWARE_3_15)
+#elif defined (FIRMWARE_3_15) || defined (FIRMWARE_3_10)
 #define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xda, 0x10
 #elif defined (FIRMWARE_3_01)
 #define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x32, 0x06, 0x40
 #else
-#error "You must specify the target firmware." \
-  " define a supported FIRMWARE_X_YZ in config.h and recompile."
+#error You must specify the target firmware. Define a supported FIRMWARE_X_YZ in \
+  config.h and recompile.
 #endif /* FIRMWARE_X_YZ */
 
 
@@ -40,6 +41,9 @@
 #define SHELLCODE_ADDR_BASE	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee, 0x70
 #elif defined (FIRMWARE_3_15)
 #define default_payload default_payload_3_15
+#define SHELLCODE_ADDR_BASE	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xde, 0x30
+#elif defined (FIRMWARE_3_10)
+#define default_payload default_payload_3_10
 #define SHELLCODE_ADDR_BASE	0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xde, 0x30
 #elif defined (FIRMWARE_3_01)
 #define default_payload default_payload_3_01
