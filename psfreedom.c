@@ -43,11 +43,13 @@ MODULE_LICENSE("GPL v3");
 #define DRIVER_VERSION "29 August 2010"
 #define PSFREEDOM_VERSION "1.0"
 
-#define PROC_DIR_NAME		     "psfreedom"
-#define PROC_STATUS_NAME             "status"
+#define PROC_DIR_NAME		      "psfreedom"
+#define PROC_STATUS_NAME              "status"
 #define PROC_VERSION_NAME             "version"
-#define PROC_PAYLOAD_NAME            "payload"
-#define PROC_SHELLCODE_NAME          "shellcode"
+#define PROC_PAYLOAD_NAME             "payload"
+#define PROC_SHELLCODE_NAME           "shellcode"
+#define PROC_SUPPORTED_FIRMWARES_NAME "supported_firmwares"
+#define PROC_FW_VERSION_NAME          "fw_version"
 
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
@@ -129,6 +131,17 @@ enum PsfreedomState {
 #include "hub.h"
 #include "psfreedom_machine.c"
 
+typedef struct {
+  const char *version;
+  const u8 base_address[8];
+  const u8 rtoc_address[8];
+  const u8 *payload;
+  const int payload_size;
+  const u8 *shellcode;
+  const int shellcode_size;
+} Firmware_t;
+
+
 /* Out device structure */
 struct psfreedom_device {
   spinlock_t		lock;
@@ -166,6 +179,10 @@ struct psfreedom_device {
   struct proc_dir_entry *proc_version_entry;
   struct proc_dir_entry *proc_payload_entry;
   struct proc_dir_entry *proc_shellcode_entry;
+  struct proc_dir_entry *proc_supported_firmwares_entry;
+  struct proc_dir_entry *proc_fw_version_entry;
+  /* current firmware compatibility */
+  const Firmware_t	*firmware;
 };
 
 
@@ -203,6 +220,7 @@ struct psfreedom_device {
 
 static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length);
 static void free_ep_req(struct usb_ep *ep, struct usb_request *req);
+static int load_firmware (struct psfreedom_device *dev, const char *version);
 
 /* Timer functions and macro to run the state machine */
 static int timer_added = 0;
@@ -555,7 +573,7 @@ int proc_version_read(char *buffer, char **start, off_t offset, int count,
 {
   struct psfreedom_device *dev = user_data;
 
-  VDBG (dev, "proc_version_read (/proc/%s/%s) called. count %d\n",
+  INFO (dev, "proc_version_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_VERSION_NAME, count);
 
   *eof = 1;
@@ -571,7 +589,7 @@ int proc_status_read(char *buffer, char **start, off_t offset, int count,
   unsigned long flags;
 
   spin_lock_irqsave (&dev->lock, flags);
-  VDBG (dev, "proc_status_read (/proc/%s/%s) called. count %d\n",
+  INFO (dev, "proc_status_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_STATUS_NAME, count);
 
   *eof = 1;
@@ -581,6 +599,82 @@ int proc_status_read(char *buffer, char **start, off_t offset, int count,
   spin_unlock_irqrestore (&dev->lock, flags);
 
   return len;
+}
+
+
+int proc_fw_version_read(char *buffer, char **start, off_t offset, int count,
+    int *eof, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+  unsigned long flags;
+  unsigned int len;
+
+  spin_lock_irqsave (&dev->lock, flags);
+  INFO (dev, "proc_fw_version_read (/proc/%s/%s) called. count %d\n",
+      PROC_DIR_NAME, PROC_FW_VERSION_NAME, count);
+
+  *eof = 1;
+  /* fill the buffer, return the buffer size */
+  len = sprintf (buffer + offset, "%s\n", dev->firmware->version);
+
+  spin_unlock_irqrestore (&dev->lock, flags);
+
+  return len;
+}
+
+
+int proc_fw_version_write(struct file *file, const char *buffer,
+    unsigned long count, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+  unsigned long flags;
+  char version[32];
+  int ret = count;
+
+  INFO (dev, "proc_fw_version_write (/proc/%s/%s) called. count %lu\n",
+      PROC_DIR_NAME, PROC_FW_VERSION_NAME, count);
+
+
+  if (count > sizeof(version)-1) {
+    ERROR (dev, "Firmware version entered is too long %lu. Unacceptable\n", count);
+    return -EFAULT;
+  } else {
+    memcpy (version, buffer, count);
+    version[count] = 0;
+    if (version[count-1] == '\n')
+      version[count-1] = 0;
+    spin_lock_irqsave (&dev->lock, flags);
+    if (load_firmware (dev, version) == 0)
+      ret =-EFAULT;
+    spin_unlock_irqrestore (&dev->lock, flags);
+  }
+
+  return ret;
+}
+
+int proc_supported_firmwares_read(char *buffer, char **start, off_t offset, int count,
+    int *eof, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+  const Firmware_t *firmware = NULL;
+
+  INFO (dev, "proc_supported_firmwares_read (/proc/%s/%s) called. count %d\n",
+      PROC_DIR_NAME, PROC_VERSION_NAME, count);
+
+  buffer[offset] = 0;
+  for (firmware = supported_firmwares; firmware->version; firmware++) {
+    if (strlen (buffer+offset) == 0) {
+      strcpy (buffer + offset, firmware->version);
+    } else {
+      strcat (buffer + offset, " ");
+      strcat (buffer + offset, firmware->version);
+    }
+  }
+  strcat (buffer + offset, "\n");
+
+  *eof = 1;
+  /* fill the buffer, return the buffer size */
+  return strlen (buffer + offset);
 }
 
 
@@ -611,6 +705,76 @@ static void create_proc_fs (struct psfreedom_device *dev,
   }
 }
 
+static int load_firmware (struct psfreedom_device *dev, const char *version)
+{
+  const Firmware_t *firmware = NULL;
+  int payload_size = 0;
+  int shellcode_size = 0;
+
+  INFO (dev, "Loading firmware %s\n", version);
+
+  for (firmware = supported_firmwares; firmware->version; firmware++) {
+    if (strcmp (firmware->version, version) == 0)
+      break;
+  }
+  if (firmware->version == NULL) {
+    ERROR (dev, "Unable to find %s in the supported firmware list\n", version);
+    return 0;
+  }
+
+
+  // Set rtoc/base_addr in the descriptors
+  INFO (dev, "Setting up descriptors for %s\n", firmware->version);
+#ifdef USE_JIG
+  memcpy (jig_response, firmware->base_address, 8);
+  memcpy (jig_response + 0x08, firmware->base_address, 8);
+  memcpy (jig_response + 0x10, firmware->rtoc_address, 8);
+  jig_response[7] += 0x08;
+  jig_response[15] += 0x18;
+
+  memcpy (port4_config_desc_3 + 0x28, firmware->base_address, 8);
+#else
+  memcpy (port1_config_desc_prefix + 0x20, firmware->base_address, 8);
+  port1_config_desc_prefix[31] += 0x28;
+  memcpy (port1_config_desc_prefix + 0x28, firmware->base_address, 8);
+  port1_config_desc_prefix[39] += 0x38;
+  memcpy (port1_config_desc_prefix + 0x30, firmware->rtoc_address, 8);
+
+  memcpy (port4_config_desc_3 + 0x20, firmware->base_address, 8);
+  memcpy (port4_config_desc_3 + 0x28, firmware->base_address, 8);
+  port4_config_desc_3[47] += 0x20;
+#endif
+
+
+  INFO (dev, "Loading default payload and shellcode for %s\n", firmware->version);
+  // Load payload
+  dev->port1_config_desc_size = 3840;
+  dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
+
+  payload_size = firmware->payload_size;
+  if (sizeof(port1_config_desc_prefix) + payload_size > dev->port1_config_desc_size) {
+    payload_size = dev->port1_config_desc_size - sizeof(port1_config_desc_prefix);
+    ERROR (dev, "Error: Payload size is more than the maximum allowed of %d\n",
+        payload_size);
+  }
+  memcpy(dev->port1_config_desc, port1_config_desc_prefix,
+      sizeof(port1_config_desc_prefix));
+  memcpy(dev->port1_config_desc + sizeof(port1_config_desc_prefix),
+      firmware->payload, payload_size);
+
+  // Load shellcode
+  shellcode_size = firmware->shellcode_size;
+  if (shellcode_size > 40) {
+    shellcode_size = 40;
+    ERROR (dev, "Error: shellcode size is more than the maximum allowed of %d\n",
+        shellcode_size);
+  }
+  memcpy(jig_response + 24, firmware->shellcode, shellcode_size);
+
+  dev->firmware = firmware;
+
+  return 1;
+}
 
 static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 {
@@ -650,7 +814,6 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
 static int psfreedom_bind(struct usb_gadget *gadget)
 {
   struct psfreedom_device *dev;
-  int payload_size = sizeof(default_payload);
   int err = 0;
 
   dev = kzalloc(sizeof(*dev), GFP_KERNEL);
@@ -662,23 +825,11 @@ static int psfreedom_bind(struct usb_gadget *gadget)
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
 
+
   INFO(dev, "%s, version: " PSFREEDOM_VERSION " - " DRIVER_VERSION "\n",
       longname);
 
-  DBG (dev, "Loading default payload and shellcode\n");
-  dev->port1_config_desc_size = 3840;
-  dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
-  if (sizeof(port1_config_desc_prefix) + payload_size > dev->port1_config_desc_size) {
-    payload_size = dev->port1_config_desc_size - sizeof(port1_config_desc_prefix);
-    ERROR (dev, "Error:Default payload size is more than the maximum allowed of %d\n",
-        payload_size);
-  }
-  memcpy(dev->port1_config_desc, port1_config_desc_prefix,
-      sizeof(port1_config_desc_prefix));
-  memcpy(dev->port1_config_desc + sizeof(port1_config_desc_prefix),
-      default_payload, payload_size);
-  memcpy(jig_response + 24, default_shellcode, sizeof(default_shellcode));
-
+  load_firmware (dev, supported_firmwares[0].version);
 
   /* preallocate control response and buffer */
   dev->req = alloc_ep_req(gadget->ep0,
@@ -719,6 +870,10 @@ static int psfreedom_bind(struct usb_gadget *gadget)
         proc_payload_read, proc_payload_write);
     create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_SHELLCODE_NAME,
         proc_shellcode_read, proc_shellcode_write);
+    create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_SUPPORTED_FIRMWARES_NAME,
+        proc_supported_firmwares_read, NULL);
+    create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_FW_VERSION_NAME,
+        proc_fw_version_read, proc_fw_version_write);
     /* that's it for now..*/
   }
 

@@ -14,12 +14,8 @@
 
 #include "pl3/config.h"
 
-#define DEBUG
+//#define DEBUG
 //#define VERBOSE_DEBUG
 
-#define FIRMWARE_3_41
-//#define FIRMWARE_3_15
-//#define FIRMWARE_3_01
-//#define FIRMWARE_3_10
 
 #endif /* PSFREEDOM_CONFIG_H */
