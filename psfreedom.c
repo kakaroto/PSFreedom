@@ -799,6 +799,10 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
       remove_proc_entry(PROC_PAYLOAD_NAME, dev->proc_dir);
     if (dev->proc_shellcode_entry)
       remove_proc_entry(PROC_SHELLCODE_NAME, dev->proc_dir);
+    if (dev->proc_supported_firmwares_entry)
+      remove_proc_entry(PROC_SUPPORTED_FIRMWARES_NAME, dev->proc_dir);
+    if (dev->proc_fw_version_entry)
+      remove_proc_entry(PROC_FW_VERSION_NAME, dev->proc_dir);
     if (dev->proc_dir)
       remove_proc_entry(PROC_DIR_NAME, NULL);
     kfree(dev);
@@ -859,18 +863,18 @@ static int psfreedom_bind(struct usb_gadget *gadget)
   dev->proc_dir = proc_mkdir (PROC_DIR_NAME, NULL);
   if (dev->proc_dir) {
     printk(KERN_INFO "/proc/%s/ created\n", PROC_DIR_NAME);
-    create_proc_fs (dev, &dev->proc_status_entry, PROC_STATUS_NAME,
-        proc_status_read, NULL);
-    create_proc_fs (dev, &dev->proc_version_entry, PROC_VERSION_NAME,
-        proc_version_read, NULL);
-    create_proc_fs (dev, &dev->proc_payload_entry, PROC_PAYLOAD_NAME,
-        proc_payload_read, proc_payload_write);
-    create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_SHELLCODE_NAME,
-        proc_shellcode_read, proc_shellcode_write);
-    create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_SUPPORTED_FIRMWARES_NAME,
-        proc_supported_firmwares_read, NULL);
-    create_proc_fs (dev, &dev->proc_shellcode_entry, PROC_FW_VERSION_NAME,
-        proc_fw_version_read, proc_fw_version_write);
+    create_proc_fs (dev, &dev->proc_status_entry,
+        PROC_STATUS_NAME, proc_status_read, NULL);
+    create_proc_fs (dev, &dev->proc_version_entry,
+        PROC_VERSION_NAME, proc_version_read, NULL);
+    create_proc_fs (dev, &dev->proc_payload_entry,
+        PROC_PAYLOAD_NAME, proc_payload_read, proc_payload_write);
+    create_proc_fs (dev, &dev->proc_shellcode_entry,
+        PROC_SHELLCODE_NAME, proc_shellcode_read, proc_shellcode_write);
+    create_proc_fs (dev, &dev->proc_supported_firmwares_entry,
+        PROC_SUPPORTED_FIRMWARES_NAME, proc_supported_firmwares_read, NULL);
+    create_proc_fs (dev, &dev->proc_fw_version_entry,
+        PROC_FW_VERSION_NAME, proc_fw_version_read, proc_fw_version_write);
     /* that's it for now..*/
   }
 
