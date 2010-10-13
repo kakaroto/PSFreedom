@@ -15,7 +15,6 @@ type 'make <platform>' inside the platform's SDK environment.
 
 
 ====== How to Use PSFreedom =====
-Note: PSFreedom only works with firmware 3.41 at the moment! 
 - First, you need to know if PSFreedom works on your device, so go to the
   Device compatibility list (http://wiki.psfreedom.com/wiki/Device_compatibility_list)
   and verify that your device is in there 
