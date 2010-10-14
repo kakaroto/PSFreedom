@@ -331,6 +331,7 @@ static int devices_setup(struct usb_gadget *gadget,
                 if ((w_value & 0xff) == (PORT1_NUM_CONFIGS-1) && w_length > 8) {
                   dev->status = DEVICE1_READY;
                   SET_TIMER (100);
+                  dev->switch_to_port_delayed = 0;
                 }
               }
               break;
@@ -340,6 +341,7 @@ static int devices_setup(struct usb_gadget *gadget,
               if (w_length > 8) {
                 dev->status = DEVICE2_READY;
                 SET_TIMER (150);
+                dev->switch_to_port_delayed = 0;
               }
               break;
             case 3:
@@ -348,6 +350,7 @@ static int devices_setup(struct usb_gadget *gadget,
               if ((w_value & 0xff) == 1 && w_length > 8) {
                 dev->status = DEVICE3_READY;
                 SET_TIMER (80);
+                dev->switch_to_port_delayed = 0;
               }
               break;
             case 4:
@@ -368,6 +371,7 @@ static int devices_setup(struct usb_gadget *gadget,
                 if (w_length > 8) {
                   dev->status = DEVICE4_READY;
                   SET_TIMER (180);
+                  dev->switch_to_port_delayed = 0;
                 }
               }
               break;

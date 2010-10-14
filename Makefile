@@ -64,6 +64,9 @@ Incredible: Inc
 incredible: Inc
 evo: Evo
 EVO: Evo
+iphone: IPHONE
+iPhone: IPHONE
+
 
 # Build configuration for each target
 # Don't forget to add a dependency on 'build'
@@ -134,3 +137,8 @@ Inc: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER
 Inc: KDIR := /usr/src/incrediblec-2.6.32.15
 Inc: EXTRAVERSION:=
 Inc: build
+
+IPHONE: EXTRA_CFLAGS += -DENABLE_S3C_CONTROLLER -DNO_DELAYED_PORT_SWITCHING
+IPHONE: KDIR := /usr/src/kernel_common/
+IPHONE: EXTRAVERSION:=
+IPHONE: build

@@ -216,6 +216,7 @@ struct psfreedom_device {
 static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length);
 static void free_ep_req(struct usb_ep *ep, struct usb_request *req);
 static int load_firmware (struct psfreedom_device *dev, const char *version);
+static void __exit psfreedom_cleanup(void);
 
 /* Timer functions and macro to run the state machine */
 static int timer_added = 0;
@@ -272,8 +273,20 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       jig_response_send (dev, NULL);
       break;
     case DEVICE5_READY:
+#ifdef NO_DELAYED_PORT_SWITCHING
+      /* if we can't delay the port switching, then we at this point, we can't
+         disconnect the device 3... so we just unregister the driver so that
+         all the devices get virtually disconnected and the exploit works.
+         Since we won't exist after that, let's unlock the spinlock and return.
+      */
+      spin_unlock_irqrestore (&dev->lock, flags);
+      dev->status = DONE;
+      psfreedom_cleanup ();
+      return;
+#else
       dev->status = DEVICE3_WAIT_DISCONNECT;
       hub_disconnect_port (dev, 3);
+#endif
       break;
     case DEVICE3_DISCONNECTED:
       dev->status = DEVICE5_WAIT_DISCONNECT;
@@ -413,6 +426,12 @@ static int psfreedom_setup(struct usb_gadget *gadget,
     value = hub_setup (gadget, ctrl, request, w_index, w_value, w_length);
   else
     value = devices_setup (gadget, ctrl, request, w_index, w_value, w_length);
+
+#ifdef NO_DELAYED_PORT_SWITCHING
+  if (dev->switch_to_port_delayed >= 0)
+    switch_to_port (dev, dev->switch_to_port_delayed);
+  dev->switch_to_port_delayed = -1;
+#endif
 
   DBG (dev, "%s Setup called %s (%d - %d) -> %d (w_length=%d)\n",
       STATUS_STR (dev->status),  REQUEST_STR (request), w_value, w_index,

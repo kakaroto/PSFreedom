@@ -1,0 +1,194 @@
+diff --git a/Makefile b/Makefile
+index 70427de..5263138 100644
+--- a/Makefile
++++ b/Makefile
+@@ -182,7 +182,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+ # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
+ export KBUILD_BUILDHOST := $(SUBARCH)
+ ARCH		?= arm
+-CROSS_COMPILE	?= /home/planetbeing/idroid-repos/idroid/prebuilt/linux-x86/toolchain/arm-eabi-4.4.0/bin/arm-eabi-
++CROSS_COMPILE	?= /root/android-ndk-r4b/build/prebuilt/linux-x86/arm-eabi-4.4.0/bin/arm-eabi-
+ 
+ # Architecture as present in compile.h
+ UTS_MACHINE 	:= $(ARCH)
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index d3be755..3a47cd1 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -12,6 +12,8 @@
+  * published by the Free Software Foundation.
+ */
+ 
++#define DEBUG
++
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+@@ -519,7 +521,8 @@ static unsigned get_ep_limit(struct s3c_hsotg_ep *hs_ep)
+ 	} else {
+ 		if (hs_ep->dir_in) {
+ 			/* maxsize = S3C_DIEPTSIZ0_XferSize_LIMIT + 1; */
+-			maxsize = 64+64+1;
++			/* maxsize = 64+64+1; */
++			maxsize = 64+1;
+ 			maxpkt = S3C_DIEPTSIZ0_PktCnt_LIMIT + 1;
+ 		} else {
+ 			maxsize = 0x3f;
+@@ -789,6 +792,12 @@ static int s3c_hsotg_ep_queue(struct usb_ep *ep, struct usb_request *req,
+ 	first = list_empty(&hs_ep->queue);
+ 	list_add_tail(&hs_req->queue, &hs_ep->queue);
+ 
++	if (!first) {
++		if (hs_req->req.zero) {
++			first = 1;
++		}
++	}
++
+ 	if (first)
+ 		s3c_hsotg_start_req(hs, hs_ep, hs_req, false);
+ 
+@@ -1252,6 +1261,9 @@ static void s3c_hsotg_complete_request_lock(struct s3c_hsotg *hsotg,
+ 	spin_unlock_irqrestore(&hs_ep->lock, flags);
+ }
+ 
++static void s3c_hsotg_handle_outdone(struct s3c_hsotg *hsotg,
++				     int epnum, bool was_setup);
++
+ /**
+  * s3c_hsotg_rx_data - receive data from the FIFO for an endpoint
+  * @hsotg: The device state.
+@@ -1262,7 +1274,7 @@ static void s3c_hsotg_complete_request_lock(struct s3c_hsotg *hsotg,
+  * endpoint, so sort out whether we need to read the data into a request
+  * that has been made for that endpoint.
+  */
+-static void s3c_hsotg_rx_data(struct s3c_hsotg *hsotg, int ep_idx, int size)
++static void s3c_hsotg_rx_data(struct s3c_hsotg *hsotg, int ep_idx, int size, bool is_setup)
+ {
+ 	struct s3c_hsotg_ep *hs_ep = &hsotg->eps[ep_idx];
+ 	struct s3c_hsotg_req *hs_req = hs_ep->req;
+@@ -1313,6 +1325,13 @@ static void s3c_hsotg_rx_data(struct s3c_hsotg *hsotg, int ep_idx, int size)
+ 	readsl(fifo, hs_req->req.buf + read_ptr, to_read);
+ 
+ 	spin_unlock(&hs_ep->lock);
++
++/*
++	if (hs_req->req.actual == hs_req->req.length)
++	{
++		s3c_hsotg_handle_outdone(hsotg, ep_idx, is_setup);
++	}
++*/
+ }
+ 
+ /**
+@@ -1494,7 +1513,7 @@ void s3c_hsotg_handle_rx(struct s3c_hsotg *hsotg)
+ 		break;
+ 
+ 	case __status(S3C_GRXSTS_PktSts_OutRX):
+-		s3c_hsotg_rx_data(hsotg, epnum, size);
++		s3c_hsotg_rx_data(hsotg, epnum, size, false);
+ 		break;
+ 
+ 	case __status(S3C_GRXSTS_PktSts_SetupRX):
+@@ -1503,7 +1522,7 @@ void s3c_hsotg_handle_rx(struct s3c_hsotg *hsotg)
+ 			s3c_hsotg_read_frameno(hsotg),
+ 			readl(hsotg->regs + S3C_DOEPCTL(0)));
+ 
+-		s3c_hsotg_rx_data(hsotg, epnum, size);
++		s3c_hsotg_rx_data(hsotg, epnum, size, true);
+ 		break;
+ 
+ 	default:
+@@ -1621,7 +1640,7 @@ static int s3c_hsotg_trytx(struct s3c_hsotg *hsotg,
+  * An IN transfer has been completed, update the transfer's state and then
+  * call the relevant completion routines.
+  */
+-static void s3c_hsotg_complete_in(struct s3c_hsotg *hsotg,
++static bool s3c_hsotg_complete_in(struct s3c_hsotg *hsotg,
+ 				  struct s3c_hsotg_ep *hs_ep)
+ {
+ 	struct s3c_hsotg_req *hs_req = hs_ep->req;
+@@ -1630,7 +1649,7 @@ static void s3c_hsotg_complete_in(struct s3c_hsotg *hsotg,
+ 
+ 	if (!hs_req) {
+ 		dev_dbg(hsotg->dev, "XferCompl but no req\n");
+-		return;
++		return true;
+ 	}
+ 
+ 	/* Calculate the size of the transfer by checking how much is left
+@@ -1659,8 +1678,11 @@ static void s3c_hsotg_complete_in(struct s3c_hsotg *hsotg,
+ 	if (!size_left && hs_req->req.actual < hs_req->req.length) {
+ 		dev_dbg(hsotg->dev, "%s trying more for req...\n", __func__);
+ 		s3c_hsotg_start_req(hsotg, hs_ep, hs_req, true);
+-	} else
++		return false;
++	} else {
+ 		s3c_hsotg_complete_request_lock(hsotg, hs_ep, hs_req, 0);
++		return true;
++	}
+ }
+ 
+ /**
+@@ -1695,9 +1717,9 @@ static void s3c_hsotg_epint(struct s3c_hsotg *hsotg, unsigned int idx,
+ 		/* we get OutDone from the FIFO, so we only need to look
+ 		 * at completing IN requests here */
+ 		if (dir_in) {
+-			s3c_hsotg_complete_in(hsotg, hs_ep);
++			bool done = s3c_hsotg_complete_in(hsotg, hs_ep);
+ 
+-			if (idx == 0)
++			if (idx == 0 && done)
+ 				s3c_hsotg_enqueue_setup(hsotg);
+ 		} else if (using_dma(hsotg)) {
+ 			/* We're using DMA, we need to fire an OutDone here
+@@ -2499,7 +2521,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	writel(S3C_DOEPMSK_SetupMsk | S3C_DOEPMSK_AHBErrMsk |
+ 	       S3C_DOEPMSK_EPDisbldMsk |
+ 	       (using_dma(hsotg) ? (S3C_DIEPMSK_XferComplMsk |
+-				   S3C_DIEPMSK_TimeOUTMsk) : 0),
++				   S3C_DIEPMSK_TimeOUTMsk) : S3C_DIEPMSK_XferComplMsk),
+ 	       hsotg->regs + S3C_DOEPMSK);
+ 
+ 	writel(0, hsotg->regs + S3C_DAINTMSK);
+@@ -2566,6 +2588,7 @@ err:
+ 	hsotg->gadget.dev.driver = NULL;
+ 	return ret;
+ }
++EXPORT_SYMBOL(usb_gadget_register_driver);
+ 
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ {
+@@ -2582,6 +2605,8 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ 	for (ep = 0; ep < S3C_HSOTG_EPS; ep++)
+ 		s3c_hsotg_ep_disable(&hsotg->eps[ep].ep);
+ 
++	s3c_hsotg_corereset(hsotg);
++
+ 	call_gadget(hsotg, disconnect);
+ 
+ 	driver->unbind(&hsotg->gadget);
+@@ -3232,6 +3257,24 @@ static int __devexit s3c_hsotg_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++static int s3c_hsotg_get_address(struct usb_gadget *gadget)
++{
++	return readl(to_hsotg(gadget)->regs + S3C_DCFG) >> S3C_DCFG_DevAddr_SHIFT;
++}
++EXPORT_SYMBOL(s3c_hsotg_get_address);
++
++static void s3c_hsotg_set_address(struct usb_gadget *gadget, int address)
++{
++	int dcfg;
++	struct s3c_hsotg *hsotg = to_hsotg(gadget);
++
++	dcfg = readl(hsotg->regs + S3C_DCFG);
++	dcfg &= ~S3C_DCFG_DevAddr_MASK;
++	dcfg |= address << S3C_DCFG_DevAddr_SHIFT;
++	writel(dcfg, hsotg->regs + S3C_DCFG);
++}
++EXPORT_SYMBOL(s3c_hsotg_set_address);
++
+ #if 1
+ #define s3c_hsotg_suspend NULL
+ #define s3c_hsotg_resume NULL

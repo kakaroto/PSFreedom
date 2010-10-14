@@ -205,7 +205,6 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
   writel((address << 25), USBDEVADDR);
   dev_vdbg(&g->dev, "***** Setting address to %d. New address: %d\n",
       address, psfreedom_get_address(g));
-  
 }
 
 #endif /* ENABLE_MSM72K_CONTROLLER */
@@ -280,3 +279,165 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 }
 
 #endif /* ENABLE_JZ4740_CONTROLLER */
+
+#ifdef ENABLE_S3C_CONTROLLER
+
+struct s3c_hsotg;
+struct s3c_hsotg_req;
+
+struct s3c_hsotg_ep {
+	struct usb_ep		ep;
+	struct list_head	queue;
+	struct s3c_hsotg	*parent;
+	struct s3c_hsotg_req	*req;
+	struct dentry		*debugfs;
+
+	spinlock_t		lock;
+
+	unsigned long		total_data;
+	unsigned int		size_loaded;
+	unsigned int		last_load;
+	unsigned int		fifo_load;
+	unsigned short		fifo_size;
+
+	unsigned char		dir_in;
+	unsigned char		index;
+
+	unsigned int		halted:1;
+	unsigned int		periodic:1;
+	unsigned int		sent_zlp:1;
+
+	char			name[10];
+};
+
+//#define S3C_HSOTG_EPS	(8+1)	/* limit to 9 for the moment */
+#define S3C_HSOTG_EPS	(6)
+
+struct s3c_hsotg {
+	struct device		 *dev;
+	struct usb_gadget_driver *driver;
+	struct s3c_hsotg_plat	 *plat;
+
+	void __iomem		*regs;
+	struct resource		*regs_res;
+	int			irq;
+
+	struct dentry		*debug_root;
+	struct dentry		*debug_file;
+	struct dentry		*debug_fifo;
+
+	struct usb_request	*ep0_reply;
+	struct usb_request	*ctrl_req;
+	u8			ep0_buff[8];
+	u8			ctrl_buff[8];
+
+	struct usb_gadget	gadget;
+	struct s3c_hsotg_ep	eps[];
+};
+
+struct s3c_hsotg_req {
+	struct usb_request	req;
+	struct list_head	queue;
+	unsigned char		in_progress;
+	unsigned char		mapped;
+};
+
+static inline struct s3c_hsotg *to_hsotg(struct usb_gadget *gadget)
+{
+	return container_of(gadget, struct s3c_hsotg, gadget);
+}
+
+#define S3C_HSOTG_REG(x) (x)
+
+/* Device mode registers */
+#define S3C_DCFG				S3C_HSOTG_REG(0x800)
+
+#define S3C_DCFG_EPMisCnt_MASK			(0x1f << 18)
+#define S3C_DCFG_EPMisCnt_SHIFT			(18)
+#define S3C_DCFG_EPMisCnt_LIMIT			(0x1f)
+#define S3C_DCFG_EPMisCnt(_x)			((_x) << 18)
+
+#define S3C_DCFG_PerFrInt_MASK			(0x3 << 11)
+#define S3C_DCFG_PerFrInt_SHIFT			(11)
+#define S3C_DCFG_PerFrInt_LIMIT			(0x3)
+#define S3C_DCFG_PerFrInt(_x)			((_x) << 11)
+
+#define S3C_DCFG_DevAddr_MASK			(0x7f << 4)
+#define S3C_DCFG_DevAddr_SHIFT			(4)
+#define S3C_DCFG_DevAddr_LIMIT			(0x7f)
+#define S3C_DCFG_DevAddr(_x)			((_x) << 4)
+
+#define S3C_DCFG_NZStsOUTHShk			(1 << 2)
+
+#define S3C_DCFG_DevSpd_MASK			(0x3 << 0)
+#define S3C_DCFG_DevSpd_SHIFT			(0)
+#define S3C_DCFG_DevSpd_HS			(0x0 << 0)
+#define S3C_DCFG_DevSpd_FS			(0x1 << 0)
+#define S3C_DCFG_DevSpd_LS			(0x2 << 0)
+#define S3C_DCFG_DevSpd_FS48			(0x3 << 0)
+
+static inline void writel(unsigned long l, unsigned long *addr)
+{
+	*(volatile unsigned long __force *)addr = l;
+}
+
+static inline unsigned long readl(unsigned long *addr)
+{
+	return *(volatile unsigned long __force *)addr;
+}
+
+static int psfreedom_is_high_speed (void)
+{
+  return 1;
+}
+
+static int psfreedom_is_low_speed (void)
+{
+  return 0;
+}
+
+static char *psfreedom_get_endpoint_name (struct usb_endpoint_descriptor *desc)
+{
+  u8 address = desc->bEndpointAddress;
+  u8 epnum = address & 0x0f;
+
+  if (epnum == 1 && (address & USB_DIR_IN) == USB_DIR_IN) {
+    return "ep1in";
+  } else if (epnum == 2 && (address & USB_DIR_IN) == USB_DIR_IN) {
+    desc->bEndpointAddress &= ~0x0f;
+    desc->bEndpointAddress |= 3;
+    return "ep3in";
+  } else if (epnum == 2 && (address & USB_DIR_IN) == 0) {
+    return "ep2out";
+  } else {
+    return NULL;
+  }
+}
+
+static u8 psfreedom_get_address (struct usb_gadget *g)
+{
+  u32 dcfg = readl(to_hsotg(g)->regs + S3C_DCFG);
+
+  dev_vdbg(&g->dev, "***** DCFG value (get) : %x\n", dcfg);
+
+  return (dcfg & S3C_DCFG_DevAddr_MASK) >> S3C_DCFG_DevAddr_SHIFT;
+}
+
+static void psfreedom_set_address (struct usb_gadget *g, u8 address)
+{
+  struct s3c_hsotg *hsotg = to_hsotg(g);
+  u32 dcfg = readl(hsotg->regs + S3C_DCFG);
+
+  dcfg |= 1 << 3; /* testing bit */
+
+  dcfg &= ~S3C_DCFG_DevAddr_MASK;
+  dcfg |= address << S3C_DCFG_DevAddr_SHIFT;
+
+  writel(dcfg, hsotg->regs + S3C_DCFG);
+
+  dev_vdbg(&g->dev, "***** Setting address to %d. New address: %d\n",
+      address, psfreedom_get_address(g));
+
+}
+
+#endif /* ENABLE_S3C_CONTROLLER */
