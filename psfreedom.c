@@ -38,7 +38,7 @@
 /*-------------------------------------------------------------------------*/
 
 MODULE_AUTHOR("Youness Alaoui (KaKaRoTo)");
-MODULE_LICENSE("GPL v3");
+MODULE_LICENSE("GPL");
 
 #define DRIVER_VERSION "29 August 2010"
 #define PSFREEDOM_VERSION "1.0"
