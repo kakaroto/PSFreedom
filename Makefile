@@ -113,6 +113,11 @@ Desire: KDIR := /usr/src/linux-2.6.32.9
 Desire: EXTRAVERSION:=
 Desire: build
 
+GPOne: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DMSM72K_UI_GADGET_OFFSET=1712
+GPOne: KDIR := /usr/src/rmcc-kernel
+GPOne: EXTAVERSION :=
+GPOne: build
+
 nexus1-cm6: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG
 nexus1-cm6: KDIR := /usr/src/kernel-msm
 nexus1-cm6: EXTRAVERSION:=
@@ -123,7 +128,7 @@ Dingoo: KDIR := /usr/src/opendingux-kernel
 Dingoo: EXTRAVERSION:=
 Dingoo: build
 
-Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DEVO_OFFSET
+Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DMSM72K_UI_GADGET_OFFSET=1724
 Evo: KDIR := /usr/src/Supersonic-2.6.32
 Evo: EXTRAVERSION:=
 Evo: build
