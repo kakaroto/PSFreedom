@@ -66,6 +66,9 @@ evo: Evo
 EVO: Evo
 iphone: IPHONE
 iPhone: IPHONE
+gpone: GPOne
+gp1: GPOne
+GP1: GPOne
 
 
 # Build configuration for each target
