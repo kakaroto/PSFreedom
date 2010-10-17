@@ -69,6 +69,11 @@ iPhone: IPHONE
 gpone: GPOne
 gp1: GPOne
 GP1: GPOne
+32B: G1
+Magic: G1
+MAGIC: G1
+32A: G1
+
 
 # Generic build rule for MSM72K controller
 build_msm72k: EXTRA_CFLAGS+=-DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
@@ -128,6 +133,11 @@ nexus1-cm6: EXTRA_CFLAGS += -DDISABLE_FIRMWARE_HOTPLUG
 nexus1-cm6: KDIR := /usr/src/kernel-msm
 nexus1-cm6: EXTRAVERSION:=
 nexus1-cm6: build_msm72k
+
+G1: EXTRA_CFLAGS += -DDISABLE_FIRMWARE_HOTPLUG
+G1: KDIR := /usr/src/cm-kernel
+G1: EXTRAVERSION:=
+G1: build_msm72k
 
 Dingoo: EXTRA_CFLAGS += -DENABLE_JZ4740_CONTROLLER
 Dingoo: KDIR := /usr/src/opendingux-kernel
