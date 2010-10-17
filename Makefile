@@ -70,6 +70,9 @@ gpone: GPOne
 gp1: GPOne
 GP1: GPOne
 
+# Generic build rule for MSM72K controller
+build_msm72k: EXTRA_CFLAGS+=-DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
+build_msm72k: build
 
 # Build configuration for each target
 # Don't forget to add a dependency on 'build'
@@ -111,40 +114,40 @@ ARCHOS_GEN7: KDIR   := /usr/src/linux-2.6.27.10-omap1
 ARCHOS_GEN7: EXTRAVERSION:=-omap1
 ARCHOS_GEN7: build
 
-Desire: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
+Desire: EXTRA_CFLAGS += -DDISABLE_FIRMWARE_HOTPLUG
 Desire: KDIR := /usr/src/linux-2.6.32.9
 Desire: EXTRAVERSION:=
-Desire: build
+Desire: build_msm72k
 
-GPOne: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
+GPOne: EXTRA_CFLAGS +=
 GPOne: KDIR := /usr/src/rmcc-kernel
 GPOne: EXTAVERSION :=
-GPOne: build
+GPOne: build_msm72k
 
-nexus1-cm6: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
+nexus1-cm6: EXTRA_CFLAGS += -DDISABLE_FIRMWARE_HOTPLUG
 nexus1-cm6: KDIR := /usr/src/kernel-msm
 nexus1-cm6: EXTRAVERSION:=
-nexus1-cm6: build
+nexus1-cm6: build_msm72k
 
 Dingoo: EXTRA_CFLAGS += -DENABLE_JZ4740_CONTROLLER
 Dingoo: KDIR := /usr/src/opendingux-kernel
 Dingoo: EXTRAVERSION:=
 Dingoo: build
 
-Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
+Evo: EXTRA_CFLAGS +=
 Evo: KDIR := /usr/src/Supersonic-2.6.32
 Evo: EXTRAVERSION:=
-Evo: build
+Evo: build_msm72k
 
 Droid: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 Droid: KDIR := /usr/src/android-omap-2.6.32
 Droid: EXTRAVERSION:=-omap2
 Droid: build
 
-Inc: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
+Inc: EXTRA_CFLAGS +=
 Inc: KDIR := /usr/src/incrediblec-2.6.32.15
 Inc: EXTRAVERSION:=
-Inc: build
+Inc: build_msm72k
 
 IPHONE: EXTRA_CFLAGS += -DENABLE_S3C_CONTROLLER -DNO_DELAYED_PORT_SWITCHING
 IPHONE: KDIR := /usr/src/kernel_common/
