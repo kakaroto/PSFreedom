@@ -111,17 +111,17 @@ ARCHOS_GEN7: KDIR   := /usr/src/linux-2.6.27.10-omap1
 ARCHOS_GEN7: EXTRAVERSION:=-omap1
 ARCHOS_GEN7: build
 
-Desire: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG
+Desire: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
 Desire: KDIR := /usr/src/linux-2.6.32.9
 Desire: EXTRAVERSION:=
 Desire: build
 
-GPOne: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DMSM72K_UI_GADGET_OFFSET=1700
+GPOne: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
 GPOne: KDIR := /usr/src/rmcc-kernel
 GPOne: EXTAVERSION :=
 GPOne: build
 
-nexus1-cm6: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG
+nexus1-cm6: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DDISABLE_FIRMWARE_HOTPLUG -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
 nexus1-cm6: KDIR := /usr/src/kernel-msm
 nexus1-cm6: EXTRAVERSION:=
 nexus1-cm6: build
@@ -131,7 +131,7 @@ Dingoo: KDIR := /usr/src/opendingux-kernel
 Dingoo: EXTRAVERSION:=
 Dingoo: build
 
-Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DMSM72K_UI_GADGET_OFFSET=1724
+Evo: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
 Evo: KDIR := /usr/src/Supersonic-2.6.32
 Evo: EXTRAVERSION:=
 Evo: build
@@ -141,7 +141,7 @@ Droid: KDIR := /usr/src/android-omap-2.6.32
 Droid: EXTRAVERSION:=-omap2
 Droid: build
 
-Inc: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER
+Inc: EXTRA_CFLAGS += -DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
 Inc: KDIR := /usr/src/incrediblec-2.6.32.15
 Inc: EXTRAVERSION:=
 Inc: build
