@@ -119,7 +119,6 @@ ARCHOS_GEN7: KDIR   := /usr/src/linux-2.6.27.10-omap1
 ARCHOS_GEN7: EXTRAVERSION:=-omap1
 ARCHOS_GEN7: build
 
-Desire: EXTRA_CFLAGS += -DDISABLE_FIRMWARE_HOTPLUG
 Desire: KDIR := /usr/src/linux-2.6.32.9
 Desire: EXTRAVERSION:=
 Desire: build_msm72k
@@ -129,12 +128,10 @@ GPOne: KDIR := /usr/src/rmcc-kernel
 GPOne: EXTAVERSION :=
 GPOne: build_msm72k
 
-nexus1-cm6: EXTRA_CFLAGS += -DDISABLE_FIRMWARE_HOTPLUG
 nexus1-cm6: KDIR := /usr/src/kernel-msm
 nexus1-cm6: EXTRAVERSION:=
 nexus1-cm6: build_msm72k
 
-G1: EXTRA_CFLAGS += -DDISABLE_FIRMWARE_HOTPLUG
 G1: KDIR := /usr/src/cm-kernel
 G1: EXTRAVERSION:=
 G1: build_msm72k
