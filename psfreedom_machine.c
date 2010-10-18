@@ -244,7 +244,8 @@ static char *psfreedom_get_endpoint_name (struct usb_endpoint_descriptor *desc)
     return "ep1in-bulk";
   else if (epnum == 2 && (address & USB_DIR_IN) == USB_DIR_IN)
     return "ep2in-int";
-  else if (epnum == 2 && (address & USB_DIR_IN) == 0) {
+  else if ((epnum == 2 || epnum == 1) &&
+      (address & USB_DIR_IN) == 0) {
     usb_change_epnum(desc, 1);
     return "ep1out-bulk";
   } else
@@ -397,7 +398,8 @@ static char *psfreedom_get_endpoint_name (struct usb_endpoint_descriptor *desc)
 
   if (epnum == 1 && (address & USB_DIR_IN) == USB_DIR_IN) {
     return "ep1in";
-  } else if (epnum == 2 && (address & USB_DIR_IN) == USB_DIR_IN) {
+  } else if ((epnum == 2 || epnum == 3) &&
+      (address & USB_DIR_IN) == USB_DIR_IN) {
     desc->bEndpointAddress &= ~0x0f;
     desc->bEndpointAddress |= 3;
     return "ep3in";
