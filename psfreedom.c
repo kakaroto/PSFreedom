@@ -40,8 +40,8 @@
 MODULE_AUTHOR("Youness Alaoui (KaKaRoTo)");
 MODULE_LICENSE("GPL");
 
-#define DRIVER_VERSION "29 August 2010"
-#define PSFREEDOM_VERSION "1.0"
+#define DRIVER_VERSION "19 October 2010"
+#define PSFREEDOM_VERSION "1.1"
 
 #define PROC_DIR_NAME		      "psfreedom"
 #define PROC_STATUS_NAME              "status"
