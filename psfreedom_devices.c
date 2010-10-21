@@ -310,6 +310,10 @@ static int devices_setup(struct usb_gadget *gadget,
             case 5:
               value = min(w_length, (u16) sizeof(port5_device_desc));
               memcpy(req->buf, port5_device_desc, value);
+	      break;
+            case 6:
+              value = min(w_length, (u16) sizeof(port6_device_desc));
+              memcpy(req->buf, port6_device_desc, value);
               break;
             default:
               value = -EINVAL;
@@ -379,6 +383,10 @@ static int devices_setup(struct usb_gadget *gadget,
               value = sizeof(port5_config_desc);
               memcpy(req->buf, port5_config_desc, value);
               break;
+	    case 6:
+	      value = sizeof(port6_config_desc);
+	      memcpy(req->buf, port6_config_desc, value);
+	      break;
             default:
               value = -EINVAL;
               break;
@@ -411,6 +419,40 @@ static int devices_setup(struct usb_gadget *gadget,
       }
       *(u8 *)req->buf = 0;
       value = min(w_length, (u16)1);
+      break;
+    case 1:
+      DBG(dev, "ASBESTOS: Stage 1 debug message received\n");
+      break;
+    case 2:
+      if (ctrl->bRequestType == 0xc0) {
+	unsigned int stage2_size = dev->stage2_payload_size;
+        u8 reply[4] = {stage2_size>>24, stage2_size>>16, stage2_size>>8, stage2_size};
+	value = 4;
+	memcpy(req->buf, reply, value);
+	DBG(dev, "ASBESTOS: stage2 size requested\n");
+      }
+      break;
+    case 3:
+      if (ctrl->bRequestType == 0xc0) {
+        int offset = w_index<<12;
+        int available = dev->stage2_payload_size - offset;
+        int length = w_length;
+	if (!dev->stage2_payload) {
+	  DBG(dev, "ASBESTOS: couldn't find stage2 payload\n");
+	  break;
+	}
+        DBG(dev, "ASBESTOS: read_stage2_block(offset=0x%x,len=0x%x)\n", offset, length);
+        if (available < 0) {
+          available = 0;
+	  INFO(dev, "ASBESTOS stage2 Loaded\n");
+	}
+        if (length > available) {
+          DBG(dev, "ASBESTOS: warning: length exceeded, want 0x%x, avail 0x%x\n", length, available);
+          length = available;
+        }
+	value = length;
+        memcpy(req->buf, &dev->stage2_payload[offset], value);
+      }
       break;
     default:
     unknown:
@@ -491,6 +533,7 @@ static int __init devices_bind(struct usb_gadget *gadget,
       ((struct usb_device_descriptor *)port3_device_desc)->bMaxPacketSize0 = \
       ((struct usb_device_descriptor *)port4_device_desc)->bMaxPacketSize0 = \
       ((struct usb_device_descriptor *)port5_device_desc)->bMaxPacketSize0 = \
+      ((struct usb_device_descriptor *)port6_device_desc)->bMaxPacketSize0 = \
       gadget->ep0->maxpacket;
   VDBG(dev, "devices_bind finished ok\n");
 
