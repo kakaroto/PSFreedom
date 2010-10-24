@@ -18,6 +18,11 @@
 
 #include "psfreedom_devices.h"
 
+/* stage1 AsbestOS request */
+#define ASBESTOS_PRINT_DBG_MSG		1
+#define ASBESTOS_GET_STAGE2_SIZE	2
+#define ASBESTOS_READ_STAGE2_BLOCK	3
+
 static void jig_response_send (struct psfreedom_device *dev,
     struct usb_request *req);
 
@@ -310,7 +315,7 @@ static int devices_setup(struct usb_gadget *gadget,
             case 5:
               value = min(w_length, (u16) sizeof(port5_device_desc));
               memcpy(req->buf, port5_device_desc, value);
-	      break;
+              break;
             case 6:
               value = min(w_length, (u16) sizeof(port6_device_desc));
               memcpy(req->buf, port6_device_desc, value);
@@ -383,10 +388,10 @@ static int devices_setup(struct usb_gadget *gadget,
               value = sizeof(port5_config_desc);
               memcpy(req->buf, port5_config_desc, value);
               break;
-	    case 6:
-	      value = sizeof(port6_config_desc);
-	      memcpy(req->buf, port6_config_desc, value);
-	      break;
+            case 6:
+              value = sizeof(port6_config_desc);
+              memcpy(req->buf, port6_config_desc, value);
+              break;
             default:
               value = -EINVAL;
               break;
@@ -420,38 +425,41 @@ static int devices_setup(struct usb_gadget *gadget,
       *(u8 *)req->buf = 0;
       value = min(w_length, (u16)1);
       break;
-    case 1:
-      DBG(dev, "ASBESTOS: Stage 1 debug message received\n");
+    case ASBESTOS_PRINT_DBG_MSG:
+      *(u8 *)(req->buf + w_length) = 0;
+      DBG(dev, "ASBESTOS [LV2]: %s\n",(char *)req->buf);
       break;
-    case 2:
+    case ASBESTOS_GET_STAGE2_SIZE:
       if (ctrl->bRequestType == 0xc0) {
-	unsigned int stage2_size = dev->stage2_payload_size;
-        u8 reply[4] = {stage2_size>>24, stage2_size>>16, stage2_size>>8, stage2_size};
-	value = 4;
-	memcpy(req->buf, reply, value);
-	DBG(dev, "ASBESTOS: stage2 size requested\n");
+        u8 reply[4];
+        value = sizeof(u32);
+        *(u32 *)reply = htonl(dev->stage2_payload_size);
+        memcpy(req->buf, reply, value);
+        DBG(dev, "ASBESTOS: stage2 size requested, stage2 size : 0x%x\n", dev->stage2_payload_size);
       }
       break;
-    case 3:
+    case ASBESTOS_READ_STAGE2_BLOCK:
       if (ctrl->bRequestType == 0xc0) {
         int offset = w_index<<12;
         int available = dev->stage2_payload_size - offset;
         int length = w_length;
-	if (!dev->stage2_payload) {
-	  DBG(dev, "ASBESTOS: couldn't find stage2 payload\n");
-	  break;
-	}
+        if (!dev->stage2_payload) {
+          DBG(dev, "ASBESTOS: couldn't find stage2 payload\n");
+          break;
+        }
         DBG(dev, "ASBESTOS: read_stage2_block(offset=0x%x,len=0x%x)\n", offset, length);
-        if (available < 0) {
+        if (available < 0)
           available = 0;
-	  INFO(dev, "ASBESTOS stage2 Loaded\n");
-	}
         if (length > available) {
           DBG(dev, "ASBESTOS: warning: length exceeded, want 0x%x, avail 0x%x\n", length, available);
           length = available;
         }
-	value = length;
-        memcpy(req->buf, &dev->stage2_payload[offset], value);
+        if ((length + offset) == dev->stage2_payload_size) {
+          INFO(dev, "ASBESTOS stage2 Loaded\n");
+          dev->status = DONE;
+        }
+        value = length;
+        memcpy(req->buf, dev->stage2_payload + offset, value);
       }
       break;
     default:

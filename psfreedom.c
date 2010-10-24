@@ -126,6 +126,9 @@ enum PsfreedomState {
       r==0xa300?"GET_PORT_STATUS":              \
       r==0x2301?"CLEAR_PORT_FEATURE":           \
       r==0x010B?"SET_INTERFACE":                \
+      r==0x4001?"ASBESTOS_PRINT_DBG_MSG":       \
+      r==0xc002?"ASBESTOS_GET_STAGE2_SIZE":     \
+      r==0xc003?"ASBESTOS_READ_STAGE2_BLOCK":   \
       "UNKNOWN")
 
 #include "hub.h"
@@ -317,7 +320,7 @@ static void psfreedom_state_machine_timeout(unsigned long data)
     case DEVICE1_DISCONNECTED:
       /* simple check to see if a stage2 is loaded */
       if (dev->stage2_payload) {
-	dev->status = DEVICE6_WAIT_READY;
+        dev->status = DEVICE6_WAIT_READY;
         hub_connect_port (dev, 6);
       } else {
         dev->status = DONE;
@@ -703,33 +706,13 @@ int proc_supported_firmwares_read(char *buffer, char **start, off_t offset, int 
   return strlen (buffer + offset);
 }
 
-int proc_stage2_read(char *buffer, char **start, off_t offset, int count,
-    int *eof, void *user_data)
-{
-  struct psfreedom_device *dev = user_data;
-  unsigned long flags;
-
-  INFO (dev, "proc_shellcode_read (/proc/%s/%s) called. count %d."
-      "Offset 0x%p - 0x%p\n",
-      PROC_DIR_NAME, PROC_STAGE2_NAME, count,
-      (void *)offset, (void *)(offset + count));
-
-  spin_lock_irqsave (&dev->lock, flags);
-  memcpy(buffer, &dev->stage2_payload[offset], dev->stage2_payload_size - offset);
-  *eof = 1;
-
-  spin_unlock_irqrestore (&dev->lock, flags);
-
-  return dev->stage2_payload_size - offset;
-}
-
 int proc_stage2_write(struct file *file, const char *buffer,
     unsigned long count, void *user_data)
 {
   struct psfreedom_device *dev = user_data;
   dev->stage2_payload_size += count;
 
-  INFO (dev, "proc_payload_write (/proc/%s/%s) called. count %lu\n",
+  INFO (dev, "proc_asbestos_stage2_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_STAGE2_NAME, count);
 
   if (dev->stage2_payload)
@@ -737,7 +720,7 @@ int proc_stage2_write(struct file *file, const char *buffer,
   else
     dev->stage2_payload = kmalloc(dev->stage2_payload_size, GFP_KERNEL);
 
-  if (copy_from_user(&dev->stage2_payload[dev->stage2_payload_size - count], buffer, count)) {
+  if (copy_from_user(dev->stage2_payload + (dev->stage2_payload_size - count), buffer, count)) {
     kfree (dev->stage2_payload);
     return -EFAULT;
   }
@@ -953,7 +936,7 @@ static int psfreedom_bind(struct usb_gadget *gadget)
     create_proc_fs (dev, &dev->proc_fw_version_entry,
         PROC_FW_VERSION_NAME, proc_fw_version_read, proc_fw_version_write);
     create_proc_fs (dev, &dev->proc_stage2_entry,
-        PROC_STAGE2_NAME, proc_stage2_read, proc_stage2_write);
+        PROC_STAGE2_NAME, NULL, proc_stage2_write);
     /* that's it for now..*/
   }
 
