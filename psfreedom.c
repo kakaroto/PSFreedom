@@ -706,6 +706,12 @@ int proc_supported_firmwares_read(char *buffer, char **start, off_t offset, int 
   return strlen (buffer + offset);
 }
 
+/*
+ * This function doesn't differentiate the writing of a new file after an other one
+ * was loaded because no arguments (offset is not present) indicate the writing of a
+ * new file. The files of size superior to 4096 bytes are cut in 4096 bytes blocks,
+ * that's why krealloc is used.
+ */
 int proc_stage2_write(struct file *file, const char *buffer,
     unsigned long count, void *user_data)
 {
