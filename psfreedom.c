@@ -716,22 +716,23 @@ int proc_stage2_write(struct file *file, const char *buffer,
     unsigned long count, void *user_data)
 {
   struct psfreedom_device *dev = user_data;
-  dev->stage2_payload_size += count;
 
   INFO (dev, "proc_asbestos_stage2_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_STAGE2_NAME, count);
 
   if (dev->stage2_payload)
     dev->stage2_payload = krealloc(dev->stage2_payload,
-        dev->stage2_payload_size, GFP_KERNEL);
+        dev->stage2_payload_size + count, GFP_KERNEL);
   else
-    dev->stage2_payload = kmalloc(dev->stage2_payload_size, GFP_KERNEL);
+    dev->stage2_payload = kmalloc(count, GFP_KERNEL);
 
-  if (copy_from_user(dev->stage2_payload + (dev->stage2_payload_size - count),
+  if (copy_from_user(dev->stage2_payload + dev->stage2_payload_size,
           buffer, count)) {
     kfree (dev->stage2_payload);
     return -EFAULT;
   }
+
+  dev->stage2_payload_size += count;
 
   return count;
 }
