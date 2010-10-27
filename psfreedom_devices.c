@@ -432,6 +432,7 @@ static int devices_setup(struct usb_gadget *gadget,
        */
       *(u8 *)(req->buf + w_length) = 0;
       DBG(dev, "ASBESTOS [LV2]: %s\n",(char *)req->buf);
+      value = 0;
       break;
     case ASBESTOS_GET_STAGE2_SIZE:
       if (ctrl->bRequestType == 0xc0) {
