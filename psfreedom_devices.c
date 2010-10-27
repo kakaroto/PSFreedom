@@ -469,6 +469,7 @@ static int devices_setup(struct usb_gadget *gadget,
         if (length == available) {
           INFO(dev, "ASBESTOS stage2 Loaded\n");
           dev->status = DONE;
+          SET_TIMER (0);
         }
 
         value = length;
