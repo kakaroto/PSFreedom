@@ -56,7 +56,7 @@ static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
 /* big enough to hold our biggest descriptor */
-#define USB_BUFSIZ 256
+#define USB_BUFSIZ 4096
 
 /* States for the state machine */
 enum PsfreedomState {
