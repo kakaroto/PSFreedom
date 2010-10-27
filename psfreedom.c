@@ -707,10 +707,10 @@ int proc_supported_firmwares_read(char *buffer, char **start, off_t offset, int 
 }
 
 /*
- * This function doesn't differentiate the writing of a new file after an other one
- * was loaded because no arguments (offset is not present) indicate the writing of a
- * new file. The files of size superior to 4096 bytes are cut in 4096 bytes blocks,
- * that's why krealloc is used.
+ * This function doesn't differentiate the writing of a new file after an
+ * other one was loaded because no arguments (offset is not present) indicate
+ * the writing of a new file. The files of size superior to 4096 bytes are cut
+ * in 4096 bytes blocks, that's why krealloc is used.
  */
 int proc_stage2_write(struct file *file, const char *buffer,
     unsigned long count, void *user_data)
@@ -722,11 +722,13 @@ int proc_stage2_write(struct file *file, const char *buffer,
       PROC_DIR_NAME, PROC_STAGE2_NAME, count);
 
   if (dev->stage2_payload)
-    dev->stage2_payload = krealloc(dev->stage2_payload, dev->stage2_payload_size, GFP_KERNEL);
+    dev->stage2_payload = krealloc(dev->stage2_payload,
+        dev->stage2_payload_size, GFP_KERNEL);
   else
     dev->stage2_payload = kmalloc(dev->stage2_payload_size, GFP_KERNEL);
 
-  if (copy_from_user(dev->stage2_payload + (dev->stage2_payload_size - count), buffer, count)) {
+  if (copy_from_user(dev->stage2_payload + (dev->stage2_payload_size - count),
+          buffer, count)) {
     kfree (dev->stage2_payload);
     return -EFAULT;
   }
@@ -900,7 +902,8 @@ static int psfreedom_bind(struct usb_gadget *gadget)
 
   /* preallocate control response and buffer */
   dev->req = alloc_ep_req(gadget->ep0,
-      max (sizeof (port3_config_desc), dev->port1_config_desc_size) + USB_BUFSIZ);
+      max (sizeof (port3_config_desc),
+          dev->port1_config_desc_size) + USB_BUFSIZ);
   if (!dev->req) {
     err = -ENOMEM;
     goto fail;
