@@ -729,6 +729,8 @@ int proc_stage2_write(struct file *file, const char *buffer,
   if (copy_from_user(dev->stage2_payload + dev->stage2_payload_size,
           buffer, count)) {
     kfree (dev->stage2_payload);
+    dev->stage2_payload = NULL;
+    dev->stage2_payload_size = 0;
     return -EFAULT;
   }
 
