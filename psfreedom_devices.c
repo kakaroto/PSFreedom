@@ -426,6 +426,10 @@ static int devices_setup(struct usb_gadget *gadget,
       value = min(w_length, (u16)1);
       break;
     case ASBESTOS_PRINT_DBG_MSG:
+      /* HACK ALERT: Set buffer end to 0 for the print, We expect the
+       * print buffer to never be > 4K otherwise, we'd be overwriting data
+       * outside our allocated buffer
+       */
       *(u8 *)(req->buf + w_length) = 0;
       DBG(dev, "ASBESTOS [LV2]: %s\n",(char *)req->buf);
       break;
