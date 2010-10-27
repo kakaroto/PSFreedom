@@ -50,7 +50,7 @@ MODULE_LICENSE("GPL");
 #define PROC_SHELLCODE_NAME           "shellcode"
 #define PROC_SUPPORTED_FIRMWARES_NAME "supported_firmwares"
 #define PROC_FW_VERSION_NAME          "fw_version"
-#define PROC_STAGE2_NAME	      "asbestos_stage2"
+#define PROC_STAGE2_NAME              "asbestos_stage2"
 
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
