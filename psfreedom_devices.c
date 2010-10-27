@@ -259,10 +259,10 @@ jig_set_config(struct psfreedom_device *dev, unsigned number)
     char *speed;
 
     switch (gadget->speed) {
-      case USB_SPEED_LOW:	speed = "low"; break;
-      case USB_SPEED_FULL:	speed = "full"; break;
-      case USB_SPEED_HIGH:	speed = "high"; break;
-      default:		speed = "?"; break;
+      case USB_SPEED_LOW:       speed = "low"; break;
+      case USB_SPEED_FULL:      speed = "full"; break;
+      case USB_SPEED_HIGH:      speed = "high"; break;
+      default:          speed = "?"; break;
     }
 
     INFO(dev, "%s speed\n", speed);
