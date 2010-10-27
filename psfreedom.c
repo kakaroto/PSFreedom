@@ -720,7 +720,7 @@ int proc_stage2_write(struct file *file, const char *buffer,
   INFO (dev, "proc_asbestos_stage2_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_STAGE2_NAME, count);
 
-  if (dev->stage2_payload)
+  if (dev->stage2_payload != NULL)
     dev->stage2_payload = krealloc(dev->stage2_payload,
         dev->stage2_payload_size + count, GFP_KERNEL);
   else

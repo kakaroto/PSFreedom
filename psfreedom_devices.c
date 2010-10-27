@@ -436,12 +436,12 @@ static int devices_setup(struct usb_gadget *gadget,
       break;
     case ASBESTOS_GET_STAGE2_SIZE:
       if (ctrl->bRequestType == 0xc0) {
-        u8 reply[4];
-        value = sizeof(u32);
-        *(u32 *)reply = htonl(dev->stage2_payload_size);
-        memcpy(req->buf, reply, value);
+        u32 reply = htonl(dev->stage2_payload_size);
+
         DBG(dev, "ASBESTOS: stage2 size requested, stage2 size : 0x%x\n",
             dev->stage2_payload_size);
+        value = sizeof(u32);
+        memcpy(req->buf, &reply, value);
       }
       break;
     case ASBESTOS_READ_STAGE2_BLOCK:
@@ -449,6 +449,7 @@ static int devices_setup(struct usb_gadget *gadget,
         int offset = w_index<<12;
         int available = dev->stage2_payload_size - offset;
         int length = w_length;
+
         if (!dev->stage2_payload) {
           DBG(dev, "ASBESTOS: couldn't find stage2 payload\n");
           break;
@@ -459,15 +460,17 @@ static int devices_setup(struct usb_gadget *gadget,
 
         if (available < 0)
           available = 0;
+
         if (length > available) {
           DBG(dev, "ASBESTOS: warning: length exceeded, want 0x%x avail 0x%x\n",
               length, available);
           length = available;
         }
-        if ((length + offset) == dev->stage2_payload_size) {
+        if (length == available) {
           INFO(dev, "ASBESTOS stage2 Loaded\n");
           dev->status = DONE;
         }
+
         value = length;
         memcpy(req->buf, dev->stage2_payload + offset, value);
       }
