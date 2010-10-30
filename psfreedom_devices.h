@@ -18,6 +18,7 @@
 
 #ifdef USE_JIG
 #include "pl3/default_payload_3_41.h"
+#include "pl3/default_payload_3_40.h"
 #include "pl3/default_payload_3_21.h"
 #include "pl3/default_payload_3_15.h"
 #include "pl3/default_payload_3_10.h"
@@ -30,6 +31,14 @@ static const Firmware_t supported_firmwares[] = {
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20},
    default_payload_3_41,
    sizeof(default_payload_3_41),
+   shellcode_egghunt,
+   sizeof(shellcode_egghunt)
+  },
+  {"3.40",
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xee, 0x70},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20},
+   default_payload_3_40,
+   sizeof(default_payload_3_40),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
   },
@@ -83,6 +92,14 @@ static const Firmware_t supported_firmwares[] = {
 static const Firmware_t supported_firmwares[] = {
   {"3.41",
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x4D, 0x10, 0x00},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20},
+   dump_lv2,
+   sizeof(dump_lv2),
+   shellcode_egghunt,
+   sizeof(shellcode_egghunt)
+  },
+  {"3.40",
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00},
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20},
    dump_lv2,
    sizeof(dump_lv2),
