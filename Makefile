@@ -1,3 +1,6 @@
+# Specify KDIR on cmd line, example:
+# make omap2 ARCH=arm CROSS_COMPILE=<path to arm-eabi-> KDIR=<path to kernel>
+
 EXTRA_CFLAGS = -I/usr/include
 
 obj-m	:= psfreedom.o 
@@ -31,130 +34,67 @@ clean:
 	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
 	rm -rf .tmp_versions
 
-# Aliases for platforms
+# Aliases for generic devices
+n900: build_omap1
+n800: build_omap1
+n810: build_omap1
+n8x0: build_omap1
+archos5it: build_omap1
+droid: build_omap2
+desire: build_msm72k
+nexusone: build_msm72k
+incredible: build_msm72k
+evo4g: build_msm72k
+gpone: build_msm72k
+hero: build_msm72k
+g1: build_msm72k
 
-n900: N900
+# Aliases for non generic devices
 n900-power: N900-POWER
-n800: N8x0
-N800: N8x0
-n810: N8x0
-N810: N8x0
-n8x0: N8x0
-palmpre: PalmPre
-PALMPRE: PalmPre
-palmpixi: PalmPixi
-PALMPIXI: PalmPixi
+palmpre: PALMPRE
+palmpixi: PALMPIXI
 archos5: ARCHOS_GEN6
-ARCHOS5: ARCHOS_GEN6
-Archos5: ARCHOS_GEN6
-archos_gen6: ARCHOS_GEN6
-archos5it: ARCHOS_GEN7
-ARCHOS5IT: ARCHOS_GEN7
-Archos5IT: ARCHOS_GEN7
-archos_gen7: ARCHOS_GEN7
-desire: Desire
-DESIRE: Desire
-dingoo: Dingoo
-DINGOO: Dingoo
-nexus1-cm6: nexus1-cm6
-NEXUS1-CM6: nexus1-cm6
-DROID: Droid
-droid: Droid
-Incredible: Inc
-incredible: Inc
-evo: Evo
-EVO: Evo
-iphone: IPHONE
+dingoo: DINGOO
 iPhone: IPHONE
-gpone: GPOne
-gp1: GPOne
-GP1: GPOne
-32B: G1
-Magic: G1
-MAGIC: G1
-32A: G1
-
 
 # Generic build rule for MSM72K controller
 build_msm72k: EXTRA_CFLAGS+=-DENABLE_MSM72K_CONTROLLER -DUI_ALLOC_ADDR=0x`cat $(KDIR)/System.map|grep the_usb_info|cut -b 1-8`
+build_msm72k: EXTRAVERSION:=
 build_msm72k: build
 
-# Build configuration for each target
+# Generic build rule for OMAP1 MUSB controller
+build_omap1: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+build_omap1: EXTRAVERSION:=-omap1
+build_omap1: build
+
+# Generic build rule for OMAP2 MUSB controller
+build_omap2: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
+build_omap2: EXTRAVERSION:=-omap2
+build_omap2: build
+
+# Build rules for non generic targets
 # Don't forget to add a dependency on 'build'
 
-N900: KDIR := /usr/src/kernel-2.6.28/
-N900: EXTRAVERSION:=-omap1
-N900: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-N900: build
-
-N900-POWER: KDIR := /usr/src/kernel-power-2.6.28/
 N900-POWER: EXTRAVERSION:=$(shell if [ -f $(KDIR)/debian/changelog ]; then \
 	 dpkg-parsechangelog -l$(KDIR)/debian/changelog | sed -ne 's/^Version: .*-maemo\(.*\)/.10power\1/p'; \
 	fi)
 N900-POWER: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
 N900-POWER: build
 
-N8x0: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-N8x0: KDIR := /usr/src/kernel-source-diablo
-N8x0: EXTRAVERSION:=-omap1
-N8x0: build
+PALMPRE: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER
+PALMPRE: EXTRAVERSION:=-joplin-3430
+PALMPRE: build
 
-PalmPre: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER
-PalmPre: KDIR	:= /usr/src/linux-2.6.24
-PalmPre: EXTRAVERSION:=-joplin-3430
-PalmPre: build
+PALMPIXI: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER -DCONFIG_USB_GADGET_MUSB_HDRC
+PALMPIXI: EXTRAVERSION:=-chuck
+PALMPIXI: build
 
-PalmPixi: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER -DCONFIG_USB_GADGET_MUSB_HDRC
-PalmPixi: KDIR	:= /usr/src/linux-2.6.24-pixi
-PalmPixi: EXTRAVERSION:=-chuck
-PalmPixi: build
+ARCHOS_GEN6: EXTRA_CFLAGS += -DENABLE_MUSB_ARCHOS_GEN6_CONTROLLER
+ARCHOS_GEN6: build_omap1
 
-ARCHOS_GEN6: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER -DENABLE_MUSB_ARCHOS_GEN6_CONTROLLER
-ARCHOS_GEN6: KDIR   := /usr/src/linux-2.6.22.1-omap1
-ARCHOS_GEN6: EXTRAVERSION:=-omap1
-ARCHOS_GEN6: build
-
-ARCHOS_GEN7: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-ARCHOS_GEN7: KDIR   := /usr/src/linux-2.6.27.10-omap1
-ARCHOS_GEN7: EXTRAVERSION:=-omap1
-ARCHOS_GEN7: build
-
-Desire: KDIR := /usr/src/linux-2.6.32.9
-Desire: EXTRAVERSION:=
-Desire: build_msm72k
-
-GPOne: EXTRA_CFLAGS +=
-GPOne: KDIR := /usr/src/rmcc-kernel
-GPOne: EXTAVERSION :=
-GPOne: build_msm72k
-
-nexus1-cm6: KDIR := /usr/src/kernel-msm
-nexus1-cm6: EXTRAVERSION:=
-nexus1-cm6: build_msm72k
-
-G1: KDIR := /usr/src/cm-kernel
-G1: EXTRAVERSION:=
-G1: build_msm72k
-
-Dingoo: EXTRA_CFLAGS += -DENABLE_JZ4740_CONTROLLER
-Dingoo: KDIR := /usr/src/opendingux-kernel
-Dingoo: EXTRAVERSION:=
-Dingoo: build
-
-Evo: EXTRA_CFLAGS +=
-Evo: KDIR := /usr/src/Supersonic-2.6.32
-Evo: EXTRAVERSION:=
-Evo: build_msm72k
-
-Droid: EXTRA_CFLAGS += -DENABLE_MUSB_CONTROLLER
-Droid: KDIR := /usr/src/android-omap-2.6.32
-Droid: EXTRAVERSION:=-omap2
-Droid: build
-
-Inc: EXTRA_CFLAGS +=
-Inc: KDIR := /usr/src/incrediblec-2.6.32.15
-Inc: EXTRAVERSION:=
-Inc: build_msm72k
+DINGOO: EXTRA_CFLAGS += -DENABLE_JZ4740_CONTROLLER
+DINGOO: EXTRAVERSION:=
+DINGOO: build
 
 IPHONE: EXTRA_CFLAGS += -DENABLE_S3C_CONTROLLER -DNO_DELAYED_PORT_SWITCHING
 IPHONE: KDIR := /usr/src/kernel_common/
