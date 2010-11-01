@@ -109,8 +109,8 @@ static const Firmware_t supported_firmwares[] = {
   {"3.21",
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x50, 0x00, 0x00},
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xda, 0x90},
-   default_payload_3_21,
-   sizeof(default_payload_3_21),
+   dump_lv2,
+   sizeof(dump_lv2),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
   },
