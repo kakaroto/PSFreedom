@@ -426,12 +426,16 @@ static int devices_setup(struct usb_gadget *gadget,
       value = min(w_length, (u16)1);
       break;
     case ASBESTOS_PRINT_DBG_MSG:
-      /* HACK ALERT: Set buffer end to 0 for the print, We expect the
-       * print buffer to never be > 4K otherwise, we'd be overwriting data
-       * outside our allocated buffer
+      DBG(dev, "ASBESTOS [LV2]: Printing debug message (ignore)\n");
+      /* HACK ALERT: Asbestos sends data to print in ep0, but there is no
+       * way to read data from ep0. The ep0 gadget is meant to be used to
+       * only receive setup packets of 8 bytes and the controller takes care
+       * of that. The gadget->ep0 is only for sending data out, so we can't
+       * queue a request in order to receive the message to print.
+       * Because of that, we will stall to tell the host we won't read its
+       * data, and we ignore the message to print.
        */
-      *(u8 *)(req->buf + w_length) = 0;
-      DBG(dev, "ASBESTOS [LV2]: %s\n",(char *)req->buf);
+      value = -EOPNOTSUPP;
       break;
     case ASBESTOS_GET_STAGE2_SIZE:
       if (ctrl->bRequestType == 0xc0) {
