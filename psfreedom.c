@@ -710,7 +710,7 @@ int proc_supported_firmwares_read(char *buffer, char **start, off_t offset, int 
  * This function doesn't differentiate the writing of a new file after an
  * other one was loaded because no arguments (offset is not present) indicate
  * the writing of a new file. The files of size superior to 4096 bytes are cut
- * in 4096 bytes blocks, that's why krealloc is used.
+ * in 4096 bytes blocks.
  */
 int proc_stage2_write(struct file *file, const char *buffer,
     unsigned long count, void *user_data)
@@ -720,11 +720,14 @@ int proc_stage2_write(struct file *file, const char *buffer,
   INFO (dev, "proc_asbestos_stage2_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_STAGE2_NAME, count);
 
-  if (dev->stage2_payload != NULL)
-    dev->stage2_payload = krealloc(dev->stage2_payload,
-        dev->stage2_payload_size + count, GFP_KERNEL);
-  else
+  if (dev->stage2_payload != NULL) {
+    char *tmp = kmalloc(dev->stage2_payload_size + count, GFP_KERNEL);
+    memcpy (tmp, dev->stage2_payload, dev->stage2_payload_size);
+    kfree (dev->stage2_payload);
+    dev->stage2_payload = tmp;
+  } else {
     dev->stage2_payload = kmalloc(count, GFP_KERNEL);
+  }
 
   if (copy_from_user(dev->stage2_payload + dev->stage2_payload_size,
           buffer, count)) {
