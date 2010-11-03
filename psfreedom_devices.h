@@ -23,6 +23,7 @@
 #include "pl3/default_payload_3_15.h"
 #include "pl3/default_payload_3_10.h"
 #include "pl3/default_payload_3_01.h"
+#include "pl3/default_payload_2_76.h"
 
 /* Default firmware is the first entry in the list */
 static const Firmware_t supported_firmwares[] = {
@@ -71,6 +72,14 @@ static const Firmware_t supported_firmwares[] = {
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x32, 0x06, 0x40},
    default_payload_3_01,
    sizeof(default_payload_3_01),
+   shellcode_egghunt,
+   sizeof(shellcode_egghunt)
+  },
+  {"2.76",
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x3B, 0x1B, 0xC8},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x31, 0x3E, 0x70},
+   default_payload_2_76,
+   sizeof(default_payload_2_76),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
   },
@@ -134,6 +143,14 @@ static const Firmware_t supported_firmwares[] = {
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x4D, 0x00, 0x00},
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x32, 0x06, 0x40},
    dump_lv2,
+   sizeof(dump_lv2),
+   shellcode_egghunt,
+   sizeof(shellcode_egghunt)
+  },
+  {"2.76",
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x3B, 0x1B, 0xC8},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x31, 0x3E, 0x70},
+   dump_lv2
    sizeof(dump_lv2),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
