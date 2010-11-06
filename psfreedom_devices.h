@@ -97,6 +97,13 @@ static const Firmware_t supported_firmwares[] = {
 #else /* USE_JIG */
 
 #include "pl3/dump_lv2.h"
+#include "pl3/shellcode_panic.h"
+
+#define SHELLCODE_ADDR_BASE	0x80, 0x00, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00
+#define SHELLCODE_PAGE		SHELLCODE_ADDR_BASE
+#define SHELLCODE_DESTINATION	SHELLCODE_ADDR_BASE + 0x20
+#define SHELLCODE_PTR 		SHELLCODE_ADDR_BASE + 0x28
+#define SHELLCODE_ADDRESS	SHELLCODE_ADDR_BASE + 0x38
 
 static const Firmware_t supported_firmwares[] = {
   {"3.41",
@@ -155,14 +162,16 @@ static const Firmware_t supported_firmwares[] = {
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
   },
+  {"x.yz",
+   {SHELLCODE_ADDR_BASE},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x31, 0x3E, 0x70},
+   shellcode_panic,
+   sizeof(shellcode_panic),
+   shellcode_panic,
+   sizeof(shellcode_panic)
+  },
   {NULL}
 };
-
-#define SHELLCODE_ADDR_BASE	0x80, 0x00, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00
-#define SHELLCODE_PAGE		SHELLCODE_ADDR_BASE
-#define SHELLCODE_DESTINATION	SHELLCODE_ADDR_BASE + 0x20
-#define SHELLCODE_PTR 		SHELLCODE_ADDR_BASE + 0x28
-#define SHELLCODE_ADDRESS	SHELLCODE_ADDR_BASE + 0x38
 
 #define PORT1_NUM_CONFIGS	100
 
