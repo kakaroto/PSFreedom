@@ -618,7 +618,10 @@ int proc_status_read(char *buffer, char **start, off_t offset, int count,
   unsigned long flags;
 
   spin_lock_irqsave (&dev->lock, flags);
-  INFO (dev, "proc_status_read (/proc/%s/%s) called. count %d\n",
+
+  /* This file is meant to be read in a loop, so don't spam dmesg with an INFO
+     message when it gets read */
+  VDBG (dev, "proc_status_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_STATUS_NAME, count);
 
   *eof = 1;
