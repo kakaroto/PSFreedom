@@ -688,7 +688,7 @@ int proc_supported_firmwares_read(char *buffer, char **start, off_t offset, int 
   const Firmware_t *firmware = NULL;
 
   INFO (dev, "proc_supported_firmwares_read (/proc/%s/%s) called. count %d\n",
-      PROC_DIR_NAME, PROC_VERSION_NAME, count);
+      PROC_DIR_NAME, PROC_SUPPORTED_FIRMWARES_NAME, count);
 
   buffer[offset] = 0;
   for (firmware = supported_firmwares; firmware->version; firmware++) {
