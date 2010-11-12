@@ -291,8 +291,13 @@ static void psfreedom_state_machine_timeout(unsigned long data)
          all the devices get virtually disconnected and the exploit works.
          Since we won't exist after that, let's unlock the spinlock and return.
       */
-      spin_unlock_irqrestore (&dev->lock, flags);
+      INFO (dev, "JAILBROKEN!!! DONE!!!!!!!!!\n");
+      INFO (dev, "Congratulations, it should work now, "
+          "all you need to do is pray!");
+      del_timer (&psfreedom_state_machine_timer);
+      timer_added = 0;
       dev->status = DONE;
+      spin_unlock_irqrestore (&dev->lock, flags);
       psfreedom_cleanup ();
       return;
 #else
