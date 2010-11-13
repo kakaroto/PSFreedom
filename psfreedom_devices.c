@@ -19,9 +19,9 @@
 #include "psfreedom_devices.h"
 
 /* stage1 AsbestOS request */
-#define ASBESTOS_PRINT_DBG_MSG		1
-#define ASBESTOS_GET_STAGE2_SIZE	2
-#define ASBESTOS_READ_STAGE2_BLOCK	3
+#define ASBESTOS_PRINT_DBG_MSG          1
+#define ASBESTOS_GET_STAGE2_SIZE        2
+#define ASBESTOS_READ_STAGE2_BLOCK      3
 
 static void jig_response_send (struct psfreedom_device *dev,
     struct usb_request *req);
@@ -37,7 +37,7 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
       status, dev->response_len, req->length);
 
   switch (status) {
-    case 0:				/* normal completion */
+    case 0:                             /* normal completion */
       if (ep == dev->in_ep) {
         /* our transmit completed.
            see if there's more to go.
@@ -55,16 +55,16 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
       break;
 
       /* this endpoint is normally active while we're configured */
-    case -ECONNABORTED:		/* hardware forced ep reset */
-    case -ESHUTDOWN:		/* disconnect from host */
+    case -ECONNABORTED:         /* hardware forced ep reset */
+    case -ESHUTDOWN:            /* disconnect from host */
       VDBG(dev, "%s gone (%d), %d/%d\n", ep->name, status,
           req->actual, req->length);
-    case -ECONNRESET:		/* request dequeued */
+    case -ECONNRESET:           /* request dequeued */
       hub_interrupt_queued = 0;
       spin_unlock_irqrestore (&dev->lock, flags);
       return;
 
-    case -EOVERFLOW:		/* buffer overrun on read means that
+    case -EOVERFLOW:            /* buffer overrun on read means that
                                  * we didn't provide a big enough
                                  * buffer.
                                  */
@@ -72,7 +72,7 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
       DBG(dev, "%s complete --> %d, %d/%d\n", ep->name,
           status, req->actual, req->length);
       break;
-    case -EREMOTEIO:		/* short read */
+    case -EREMOTEIO:            /* short read */
       break;
   }
 
@@ -129,7 +129,7 @@ static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
       status, req->length, req->actual);
 
   switch (status) {
-    case 0:				/* normal completion */
+    case 0:                             /* normal completion */
       if (ep == dev->out_ep) {
         /* our transmit completed */
         /* TODO handle data */
@@ -143,15 +143,15 @@ static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
       break;
 
       /* this endpoint is normally active while we're configured */
-    case -ECONNABORTED:		/* hardware forced ep reset */
-    case -ECONNRESET:		/* request dequeued */
-    case -ESHUTDOWN:		/* disconnect from host */
+    case -ECONNABORTED:         /* hardware forced ep reset */
+    case -ECONNRESET:           /* request dequeued */
+    case -ESHUTDOWN:            /* disconnect from host */
       VDBG(dev, "%s gone (%d), %d/%d\n", ep->name, status,
           req->actual, req->length);
       spin_unlock_irqrestore (&dev->lock, flags);
       return;
 
-    case -EOVERFLOW:		/* buffer overrun on read means that
+    case -EOVERFLOW:            /* buffer overrun on read means that
                                  * we didn't provide a big enough
                                  * buffer.
                                  */
@@ -159,7 +159,7 @@ static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
       DBG(dev, "%s complete --> %d, %d/%d\n", ep->name,
           status, req->actual, req->length);
       break;
-    case -EREMOTEIO:		/* short read */
+    case -EREMOTEIO:            /* short read */
       break;
   }
 
@@ -516,7 +516,7 @@ static int __init devices_bind(struct usb_gadget *gadget,
         shortname, gadget->name);
     return -ENODEV;
   }
-  out_ep->driver_data = out_ep;	/* claim */
+  out_ep->driver_data = out_ep; /* claim */
 
   gadget_for_each_ep (in_ep, gadget) {
     if (0 == strcmp (in_ep->name,
@@ -529,7 +529,7 @@ static int __init devices_bind(struct usb_gadget *gadget,
         shortname, gadget->name);
     return -ENODEV;
   }
-  in_ep->driver_data = in_ep;	/* claim */
+  in_ep->driver_data = in_ep;   /* claim */
 
   /* ok, we made sense of the hardware ... */
   dev->in_ep = in_ep;

@@ -26,8 +26,8 @@ static void hub_interrupt_transmit(struct psfreedom_device *dev);
  * DO NOT REUSE THESE IDs with a protocol-incompatible driver!!  Ever!!
  * Instead:  allocate your own, using normal USB-IF procedures.
  */
-#define DRIVER_VENDOR_NUM	0xaaaa		/* Atmel Corp */
-#define DRIVER_PRODUCT_NUM	0xcccc		/* 4-Port Hub */
+#define DRIVER_VENDOR_NUM       0xaaaa          /* Atmel Corp */
+#define DRIVER_PRODUCT_NUM      0xcccc          /* 4-Port Hub */
 
 
 /*
@@ -37,58 +37,58 @@ static void hub_interrupt_transmit(struct psfreedom_device *dev);
 
 /* B.1  Device Descriptor */
 static struct usb_device_descriptor hub_device_desc = {
-  .bLength =		USB_DT_DEVICE_SIZE,
-  .bDescriptorType =	USB_DT_DEVICE,
-  .bcdUSB =		cpu_to_le16(0x0200),
-  .bDeviceClass =	USB_CLASS_HUB,
-  .bDeviceSubClass =	0x00,
-  .bDeviceProtocol =	0x01,
-  .idVendor =		cpu_to_le16(DRIVER_VENDOR_NUM),
-  .idProduct =		cpu_to_le16(DRIVER_PRODUCT_NUM),
-  .bcdDevice =		cpu_to_le16(0x0100),
-  .iManufacturer =	0,
-  .iProduct =		0,
-  .bNumConfigurations =	1,
+  .bLength =            USB_DT_DEVICE_SIZE,
+  .bDescriptorType =    USB_DT_DEVICE,
+  .bcdUSB =             cpu_to_le16(0x0200),
+  .bDeviceClass =       USB_CLASS_HUB,
+  .bDeviceSubClass =    0x00,
+  .bDeviceProtocol =    0x01,
+  .idVendor =           cpu_to_le16(DRIVER_VENDOR_NUM),
+  .idProduct =          cpu_to_le16(DRIVER_PRODUCT_NUM),
+  .bcdDevice =          cpu_to_le16(0x0100),
+  .iManufacturer =      0,
+  .iProduct =           0,
+  .bNumConfigurations = 1,
 };
 
 /* Hub Configuration Descriptor */
 static struct usb_config_descriptor hub_config_desc = {
-  .bLength =		USB_DT_CONFIG_SIZE,
-  .bDescriptorType =	USB_DT_CONFIG,
+  .bLength =            USB_DT_CONFIG_SIZE,
+  .bDescriptorType =    USB_DT_CONFIG,
   .wTotalLength =       USB_DT_CONFIG_SIZE + USB_DT_INTERFACE_SIZE + USB_DT_ENDPOINT_SIZE,
-  .bNumInterfaces =	1,
+  .bNumInterfaces =     1,
   .bConfigurationValue =  1,
-  .iConfiguration =	0,
-  .bmAttributes =	USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_WAKEUP | USB_CONFIG_ATT_SELFPOWER,
-  .bMaxPower =		50,
+  .iConfiguration =     0,
+  .bmAttributes =       USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_WAKEUP | USB_CONFIG_ATT_SELFPOWER,
+  .bMaxPower =          50,
 };
 
 /* Hub Interface Descriptor */
 static const struct usb_interface_descriptor hub_interface_desc = {
-  .bLength =		USB_DT_INTERFACE_SIZE,
-  .bDescriptorType =	USB_DT_INTERFACE,
-  .bInterfaceNumber =	0,
-  .bNumEndpoints =	1,
-  .bInterfaceClass =	USB_CLASS_HUB,
-  .bInterfaceSubClass =	0,
+  .bLength =            USB_DT_INTERFACE_SIZE,
+  .bDescriptorType =    USB_DT_INTERFACE,
+  .bInterfaceNumber =   0,
+  .bNumEndpoints =      1,
+  .bInterfaceClass =    USB_CLASS_HUB,
+  .bInterfaceSubClass = 0,
   .bInterfaceProtocol = 0,
-  .iInterface =		0,
+  .iInterface =         0,
 };
 
 /* Hub endpoint Descriptor */
 static struct usb_endpoint_descriptor hub_endpoint_desc = {
-  .bLength =		USB_DT_ENDPOINT_SIZE,
-  .bDescriptorType =	USB_DT_ENDPOINT,
-  .bEndpointAddress =	USB_DIR_IN | 0x02,
-  .bmAttributes =	USB_ENDPOINT_XFER_INT,
-  .wMaxPacketSize =	__constant_cpu_to_le16(8),
-  .bInterval =		12,	// frames -> 32 ms
+  .bLength =            USB_DT_ENDPOINT_SIZE,
+  .bDescriptorType =    USB_DT_ENDPOINT,
+  .bEndpointAddress =   USB_DIR_IN | 0x02,
+  .bmAttributes =       USB_ENDPOINT_XFER_INT,
+  .wMaxPacketSize =     __constant_cpu_to_le16(8),
+  .bInterval =          12,     // frames -> 32 ms
 };
 
 /* Hub class specific Descriptor */
 static const struct usb_hub_header_descriptor hub_header_desc = {
-  .bLength =		USB_DT_HUB_HEADER_SIZE (6),
-  .bDescriptorType =	USB_DT_CS_HUB,
+  .bLength =            USB_DT_HUB_HEADER_SIZE (6),
+  .bDescriptorType =    USB_DT_CS_HUB,
   .bNbrPorts = 6,
   .wHubCharacteristics = __constant_cpu_to_le16 (0x00a9),
   .bPwrOn2PwrGood = 20,
@@ -164,7 +164,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
   hub_interrupt_queued = 0;
 
   switch (status) {
-    case 0:				/* normal completion */
+    case 0:                             /* normal completion */
       if (ep == dev->hub_ep) {
         /* our transmit completed.
            see if there's more to go.
@@ -176,16 +176,16 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
       break;
 
       /* this endpoint is normally active while we're configured */
-    case -ECONNABORTED:		/* hardware forced ep reset */
-    case -ESHUTDOWN:		/* disconnect from host */
+    case -ECONNABORTED:         /* hardware forced ep reset */
+    case -ESHUTDOWN:            /* disconnect from host */
       VDBG(dev, "%s gone (%d), %d/%d\n", ep->name, status,
           req->actual, req->length);
-    case -ECONNRESET:		/* request dequeued */
+    case -ECONNRESET:           /* request dequeued */
       hub_interrupt_queued = 0;
       spin_unlock_irqrestore (&dev->lock, flags);
       return;
 
-    case -EOVERFLOW:		/* buffer overrun on read means that
+    case -EOVERFLOW:            /* buffer overrun on read means that
                                  * we didn't provide a big enough
                                  * buffer.
                                  */
@@ -193,7 +193,7 @@ static void hub_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
       DBG(dev, "%s complete --> %d, %d/%d\n", ep->name,
           status, req->actual, req->length);
       break;
-    case -EREMOTEIO:		/* short read */
+    case -EREMOTEIO:            /* short read */
       break;
   }
 
@@ -324,10 +324,10 @@ hub_set_config(struct psfreedom_device *dev, unsigned number)
     char *speed;
 
     switch (gadget->speed) {
-      case USB_SPEED_LOW:	speed = "low"; break;
-      case USB_SPEED_FULL:	speed = "full"; break;
-      case USB_SPEED_HIGH:	speed = "high"; break;
-      default:		speed = "?"; break;
+      case USB_SPEED_LOW:       speed = "low"; break;
+      case USB_SPEED_FULL:      speed = "full"; break;
+      case USB_SPEED_HIGH:      speed = "high"; break;
+      default:          speed = "?"; break;
     }
 
     INFO(dev, "%s speed\n", speed);
@@ -669,7 +669,7 @@ static int __init hub_bind(struct usb_gadget *gadget, struct psfreedom_device *d
         shortname, gadget->name);
     return -ENODEV;
   }
-  in_ep->driver_data = in_ep;	/* claim */
+  in_ep->driver_data = in_ep;   /* claim */
 
   /* ok, we made sense of the hardware ... */
   dev->hub_ep = in_ep;

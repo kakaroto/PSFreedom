@@ -207,22 +207,22 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 
 #include "../drivers/usb/gadget/jz4740_udc.h"
 
-#define JZ_REG_UDC_FADDR	0x00 /* Function Address 8-bit */
+#define JZ_REG_UDC_FADDR        0x00 /* Function Address 8-bit */
 
 static inline uint8_t usb_readb (struct jz4740_udc *udc, size_t reg)
 {
-	return readb(udc->base + reg);
+        return readb(udc->base + reg);
 }
 
 static inline void usb_writeb (struct jz4740_udc *udc, size_t reg, uint8_t val)
 {
-	writeb(val, udc->base + reg);
+        writeb(val, udc->base + reg);
 }
 
 static inline void usb_change_epnum (struct usb_endpoint_descriptor *desc, uint8_t epnum)
 {
-	desc->bEndpointAddress &= ~0x0f;
-	desc->bEndpointAddress |= epnum;
+        desc->bEndpointAddress &= ~0x0f;
+        desc->bEndpointAddress |= epnum;
 }
 
 static int psfreedom_is_high_speed (void)
@@ -281,104 +281,104 @@ struct s3c_hsotg;
 struct s3c_hsotg_req;
 
 struct s3c_hsotg_ep {
-	struct usb_ep		ep;
-	struct list_head	queue;
-	struct s3c_hsotg	*parent;
-	struct s3c_hsotg_req	*req;
-	struct dentry		*debugfs;
+        struct usb_ep           ep;
+        struct list_head        queue;
+        struct s3c_hsotg        *parent;
+        struct s3c_hsotg_req    *req;
+        struct dentry           *debugfs;
 
-	spinlock_t		lock;
+        spinlock_t              lock;
 
-	unsigned long		total_data;
-	unsigned int		size_loaded;
-	unsigned int		last_load;
-	unsigned int		fifo_load;
-	unsigned short		fifo_size;
+        unsigned long           total_data;
+        unsigned int            size_loaded;
+        unsigned int            last_load;
+        unsigned int            fifo_load;
+        unsigned short          fifo_size;
 
-	unsigned char		dir_in;
-	unsigned char		index;
+        unsigned char           dir_in;
+        unsigned char           index;
 
-	unsigned int		halted:1;
-	unsigned int		periodic:1;
-	unsigned int		sent_zlp:1;
+        unsigned int            halted:1;
+        unsigned int            periodic:1;
+        unsigned int            sent_zlp:1;
 
-	char			name[10];
+        char                    name[10];
 };
 
-//#define S3C_HSOTG_EPS	(8+1)	/* limit to 9 for the moment */
-#define S3C_HSOTG_EPS	(6)
+//#define S3C_HSOTG_EPS (8+1)   /* limit to 9 for the moment */
+#define S3C_HSOTG_EPS   (6)
 
 struct s3c_hsotg {
-	struct device		 *dev;
-	struct usb_gadget_driver *driver;
-	struct s3c_hsotg_plat	 *plat;
+        struct device            *dev;
+        struct usb_gadget_driver *driver;
+        struct s3c_hsotg_plat    *plat;
 
-	void __iomem		*regs;
-	struct resource		*regs_res;
-	int			irq;
+        void __iomem            *regs;
+        struct resource         *regs_res;
+        int                     irq;
 
-	struct dentry		*debug_root;
-	struct dentry		*debug_file;
-	struct dentry		*debug_fifo;
+        struct dentry           *debug_root;
+        struct dentry           *debug_file;
+        struct dentry           *debug_fifo;
 
-	struct usb_request	*ep0_reply;
-	struct usb_request	*ctrl_req;
-	u8			ep0_buff[8];
-	u8			ctrl_buff[8];
+        struct usb_request      *ep0_reply;
+        struct usb_request      *ctrl_req;
+        u8                      ep0_buff[8];
+        u8                      ctrl_buff[8];
 
-	struct usb_gadget	gadget;
-	struct s3c_hsotg_ep	eps[];
+        struct usb_gadget       gadget;
+        struct s3c_hsotg_ep     eps[];
 };
 
 struct s3c_hsotg_req {
-	struct usb_request	req;
-	struct list_head	queue;
-	unsigned char		in_progress;
-	unsigned char		mapped;
+        struct usb_request      req;
+        struct list_head        queue;
+        unsigned char           in_progress;
+        unsigned char           mapped;
 };
 
 static inline struct s3c_hsotg *to_hsotg(struct usb_gadget *gadget)
 {
-	return container_of(gadget, struct s3c_hsotg, gadget);
+        return container_of(gadget, struct s3c_hsotg, gadget);
 }
 
 #define S3C_HSOTG_REG(x) (x)
 
 /* Device mode registers */
-#define S3C_DCFG				S3C_HSOTG_REG(0x800)
+#define S3C_DCFG                                S3C_HSOTG_REG(0x800)
 
-#define S3C_DCFG_EPMisCnt_MASK			(0x1f << 18)
-#define S3C_DCFG_EPMisCnt_SHIFT			(18)
-#define S3C_DCFG_EPMisCnt_LIMIT			(0x1f)
-#define S3C_DCFG_EPMisCnt(_x)			((_x) << 18)
+#define S3C_DCFG_EPMisCnt_MASK                  (0x1f << 18)
+#define S3C_DCFG_EPMisCnt_SHIFT                 (18)
+#define S3C_DCFG_EPMisCnt_LIMIT                 (0x1f)
+#define S3C_DCFG_EPMisCnt(_x)                   ((_x) << 18)
 
-#define S3C_DCFG_PerFrInt_MASK			(0x3 << 11)
-#define S3C_DCFG_PerFrInt_SHIFT			(11)
-#define S3C_DCFG_PerFrInt_LIMIT			(0x3)
-#define S3C_DCFG_PerFrInt(_x)			((_x) << 11)
+#define S3C_DCFG_PerFrInt_MASK                  (0x3 << 11)
+#define S3C_DCFG_PerFrInt_SHIFT                 (11)
+#define S3C_DCFG_PerFrInt_LIMIT                 (0x3)
+#define S3C_DCFG_PerFrInt(_x)                   ((_x) << 11)
 
-#define S3C_DCFG_DevAddr_MASK			(0x7f << 4)
-#define S3C_DCFG_DevAddr_SHIFT			(4)
-#define S3C_DCFG_DevAddr_LIMIT			(0x7f)
-#define S3C_DCFG_DevAddr(_x)			((_x) << 4)
+#define S3C_DCFG_DevAddr_MASK                   (0x7f << 4)
+#define S3C_DCFG_DevAddr_SHIFT                  (4)
+#define S3C_DCFG_DevAddr_LIMIT                  (0x7f)
+#define S3C_DCFG_DevAddr(_x)                    ((_x) << 4)
 
-#define S3C_DCFG_NZStsOUTHShk			(1 << 2)
+#define S3C_DCFG_NZStsOUTHShk                   (1 << 2)
 
-#define S3C_DCFG_DevSpd_MASK			(0x3 << 0)
-#define S3C_DCFG_DevSpd_SHIFT			(0)
-#define S3C_DCFG_DevSpd_HS			(0x0 << 0)
-#define S3C_DCFG_DevSpd_FS			(0x1 << 0)
-#define S3C_DCFG_DevSpd_LS			(0x2 << 0)
-#define S3C_DCFG_DevSpd_FS48			(0x3 << 0)
+#define S3C_DCFG_DevSpd_MASK                    (0x3 << 0)
+#define S3C_DCFG_DevSpd_SHIFT                   (0)
+#define S3C_DCFG_DevSpd_HS                      (0x0 << 0)
+#define S3C_DCFG_DevSpd_FS                      (0x1 << 0)
+#define S3C_DCFG_DevSpd_LS                      (0x2 << 0)
+#define S3C_DCFG_DevSpd_FS48                    (0x3 << 0)
 
 static inline void writel(unsigned long l, unsigned long *addr)
 {
-	*(volatile unsigned long __force *)addr = l;
+        *(volatile unsigned long __force *)addr = l;
 }
 
 static inline unsigned long readl(unsigned long *addr)
 {
-	return *(volatile unsigned long __force *)addr;
+        return *(volatile unsigned long __force *)addr;
 }
 
 static int psfreedom_is_high_speed (void)

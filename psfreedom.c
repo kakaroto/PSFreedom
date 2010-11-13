@@ -43,7 +43,7 @@ MODULE_LICENSE("GPL");
 #define DRIVER_VERSION "19 October 2010"
 #define PSFREEDOM_VERSION "1.1"
 
-#define PROC_DIR_NAME		      "psfreedom"
+#define PROC_DIR_NAME                 "psfreedom"
 #define PROC_STATUS_NAME              "status"
 #define PROC_VERSION_NAME             "version"
 #define PROC_PAYLOAD_NAME             "payload"
@@ -147,32 +147,32 @@ typedef struct {
 
 /* Out device structure */
 struct psfreedom_device {
-  spinlock_t		lock;
-  struct usb_gadget	*gadget;
+  spinlock_t            lock;
+  struct usb_gadget     *gadget;
   /* for control responses */
-  struct usb_request	*req;
+  struct usb_request    *req;
   /* for hub interrupts */
-  struct usb_request	*hub_req;
+  struct usb_request    *hub_req;
   /* The hub uses a non standard ep2in */
-  struct usb_ep		*hub_ep;
+  struct usb_ep         *hub_ep;
   /* BULK IN for the JIG */
-  struct usb_ep		*in_ep;
+  struct usb_ep         *in_ep;
   /* BULK OUT for the JIG */
-  struct usb_ep		*out_ep;
+  struct usb_ep         *out_ep;
   /* status of the state machine */
-  enum PsfreedomState	status;
+  enum PsfreedomState   status;
   /* The port to switch to after a delay */
-  int			switch_to_port_delayed;
+  int                   switch_to_port_delayed;
   /* Received length of the JIG challenge */
-  int			challenge_len;
+  int                   challenge_len;
   /* Sent length of the JIG response */
-  int			response_len;
+  int                   response_len;
   /* Hub port status/change */
-  struct hub_port	hub_ports[6];
+  struct hub_port       hub_ports[6];
   /* Currently enabled port on the hub (0 == hub) */
-  unsigned int		current_port;
+  unsigned int          current_port;
   /* The address of all ports (0 == hub) */
-  u8			port_address[7];
+  u8                    port_address[7];
   /* The port1 configuration descriptor. dynamically loaded from procfs */
   u8 *port1_config_desc;
   unsigned int port1_config_desc_size;
@@ -186,7 +186,7 @@ struct psfreedom_device {
   struct proc_dir_entry *proc_fw_version_entry;
   struct proc_dir_entry *proc_stage2_entry;
   /* current firmware compatibility */
-  const Firmware_t	*firmware;
+  const Firmware_t      *firmware;
   /* pointer to stage2 payload */
   char *stage2_payload;
   unsigned int stage2_payload_size;
@@ -339,7 +339,7 @@ static void psfreedom_state_machine_timeout(unsigned long data)
 
 static struct usb_request *alloc_ep_req(struct usb_ep *ep, unsigned length)
 {
-  struct usb_request	*req;
+  struct usb_request *req;
 
   req = usb_ep_alloc_request(ep, GFP_ATOMIC);
   if (req) {
@@ -766,9 +766,9 @@ static void create_proc_fs (struct psfreedom_device *dev,
     (*entry)->data       = dev;
     (*entry)->mode       = S_IFREG;
     if (read_proc)
-      (*entry)->mode	|= S_IRUGO;
+      (*entry)->mode    |= S_IRUGO;
     if (write_proc)
-      (*entry)->mode	|= S_IWUGO;
+      (*entry)->mode    |= S_IWUGO;
     (*entry)->uid        = 0;
     (*entry)->gid        = 0;
     (*entry)->size       = 0;
@@ -989,21 +989,21 @@ static void psfreedom_resume(struct usb_gadget *gadget)
 }
 
 static struct usb_gadget_driver psfreedom_driver = {
-  .speed	= USB_SPEED_HIGH,
-  .function	= (char *)longname,
+  .speed        = USB_SPEED_HIGH,
+  .function     = (char *)longname,
 
-  .bind		= psfreedom_bind,
-  .unbind	= psfreedom_unbind,
+  .bind         = psfreedom_bind,
+  .unbind       = psfreedom_unbind,
 
-  .setup	= psfreedom_setup,
-  .disconnect	= psfreedom_disconnect,
+  .setup        = psfreedom_setup,
+  .disconnect   = psfreedom_disconnect,
 
-  .suspend	= psfreedom_suspend,
-  .resume	= psfreedom_resume,
+  .suspend      = psfreedom_suspend,
+  .resume       = psfreedom_resume,
 
-  .driver	= {
-    .name		= (char *)shortname,
-    .owner		= THIS_MODULE,
+  .driver       = {
+    .name               = (char *)shortname,
+    .owner              = THIS_MODULE,
   },
 };
 

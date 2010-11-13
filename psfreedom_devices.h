@@ -13,8 +13,8 @@
 
 #include "pl3/shellcode_egghunt.h"
 
-#define MAGIC_NUMBER		0x50, 0x53, 0x46, 0x72, 0x65, 0x65, 0x64, 0x6d
-#define RTOC_TABLE		0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20
+#define MAGIC_NUMBER            0x50, 0x53, 0x46, 0x72, 0x65, 0x65, 0x64, 0x6d
+#define RTOC_TABLE              0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20
 
 #ifdef USE_JIG
 #include "pl3/default_payload_3_41.h"
@@ -86,24 +86,24 @@ static const Firmware_t supported_firmwares[] = {
   {NULL}
 };
 
-#define SHELLCODE_ADDR_BASE	0x80, 0x00, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00
-#define SHELLCODE_PAGE		0x80, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00
-#define SHELLCODE_DESTINATION	SHELLCODE_ADDR_BASE
-#define SHELLCODE_PTR 		SHELLCODE_ADDR_BASE + 0x08
-#define SHELLCODE_ADDRESS	SHELLCODE_ADDR_BASE + 0x18
+#define SHELLCODE_ADDR_BASE     0x80, 0x00, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00
+#define SHELLCODE_PAGE          0x80, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00
+#define SHELLCODE_DESTINATION   SHELLCODE_ADDR_BASE
+#define SHELLCODE_PTR           SHELLCODE_ADDR_BASE + 0x08
+#define SHELLCODE_ADDRESS       SHELLCODE_ADDR_BASE + 0x18
 
-#define PORT1_NUM_CONFIGS	4
+#define PORT1_NUM_CONFIGS       4
 
 #else /* USE_JIG */
 
 #include "pl3/dump_lv2.h"
 #include "pl3/shellcode_panic.h"
 
-#define SHELLCODE_ADDR_BASE	0x80, 0x00, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00
-#define SHELLCODE_PAGE		SHELLCODE_ADDR_BASE
-#define SHELLCODE_DESTINATION	SHELLCODE_ADDR_BASE + 0x20
-#define SHELLCODE_PTR 		SHELLCODE_ADDR_BASE + 0x28
-#define SHELLCODE_ADDRESS	SHELLCODE_ADDR_BASE + 0x38
+#define SHELLCODE_ADDR_BASE     0x80, 0x00, 0x00, 0x00, 0x00, 0x4E, 0x00, 0x00
+#define SHELLCODE_PAGE          SHELLCODE_ADDR_BASE
+#define SHELLCODE_DESTINATION   SHELLCODE_ADDR_BASE + 0x20
+#define SHELLCODE_PTR           SHELLCODE_ADDR_BASE + 0x28
+#define SHELLCODE_ADDRESS       SHELLCODE_ADDR_BASE + 0x38
 
 static const Firmware_t supported_firmwares[] = {
   {"3.41",
@@ -173,28 +173,28 @@ static const Firmware_t supported_firmwares[] = {
   {NULL}
 };
 
-#define PORT1_NUM_CONFIGS	100
+#define PORT1_NUM_CONFIGS       100
 
 #endif /* USE_JIG */
 
 /* Hub endpoint Descriptor */
 static struct usb_endpoint_descriptor jig_out_endpoint_desc = {
-  .bLength =		USB_DT_ENDPOINT_SIZE,
-  .bDescriptorType =	USB_DT_ENDPOINT,
-  .bEndpointAddress =	USB_DIR_OUT | 0x02,
-  .bmAttributes =	USB_ENDPOINT_XFER_BULK,
-  .wMaxPacketSize =	__constant_cpu_to_le16(8),
-  .bInterval =		0x00,
+  .bLength =            USB_DT_ENDPOINT_SIZE,
+  .bDescriptorType =    USB_DT_ENDPOINT,
+  .bEndpointAddress =   USB_DIR_OUT | 0x02,
+  .bmAttributes =       USB_ENDPOINT_XFER_BULK,
+  .wMaxPacketSize =     __constant_cpu_to_le16(8),
+  .bInterval =          0x00,
 };
 
 /* Hub endpoint Descriptor */
 static struct usb_endpoint_descriptor jig_in_endpoint_desc = {
-  .bLength =		USB_DT_ENDPOINT_SIZE,
-  .bDescriptorType =	USB_DT_ENDPOINT,
-  .bEndpointAddress =	USB_DIR_IN | 0x01,
-  .bmAttributes =	USB_ENDPOINT_XFER_BULK,
-  .wMaxPacketSize =	__constant_cpu_to_le16(8),
-  .bInterval =		0x00,
+  .bLength =            USB_DT_ENDPOINT_SIZE,
+  .bDescriptorType =    USB_DT_ENDPOINT,
+  .bEndpointAddress =   USB_DIR_IN | 0x01,
+  .bmAttributes =       USB_ENDPOINT_XFER_BULK,
+  .wMaxPacketSize =     __constant_cpu_to_le16(8),
+  .bInterval =          0x00,
 };
 
 static u8 jig_response[64] = {
