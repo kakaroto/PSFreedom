@@ -430,7 +430,7 @@ static int psfreedom_setup(struct usb_gadget *gadget,
   u16 request = (ctrl->bRequestType << 8) | ctrl->bRequest;
 
   spin_lock_irqsave (&dev->lock, flags);
-  VDBG (dev, "Setup called %d (%d) -- %d -- %d. Myaddr :%d\n", ctrl->bRequest,
+  VDBG (dev, "Setup called %d (0x%x) -- %d -- %d. Myaddr :%d\n", ctrl->bRequest,
       ctrl->bRequestType, w_value, w_index, address);
 
   req->zero = 0;
