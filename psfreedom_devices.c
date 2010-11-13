@@ -481,7 +481,7 @@ static int devices_setup(struct usb_gadget *gadget,
       break;
     default:
     unknown:
-      DBG(dev, "unknown control req%02x.%02x v%04x i%04x l%d\n",
+      DBG(dev, "unknown control req %02x.%02x v%04x i%04x l%d\n",
           ctrl->bRequestType, ctrl->bRequest,
           w_value, w_index, w_length);
   }
