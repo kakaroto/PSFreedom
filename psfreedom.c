@@ -55,6 +55,18 @@ MODULE_LICENSE("GPL");
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
+#ifdef ENABLE_S3C_CONTROLLER
+static short int no_delayed_switching = 1;
+#else
+static short int no_delayed_switching = 0;
+#endif
+
+module_param(no_delayed_switching, short,
+             S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+
+MODULE_PARM_DESC(no_delayed_switching, 
+                 " Enable no delayed port switching mode.");
+
 /* big enough to hold our biggest descriptor */
 #define USB_BUFSIZ 4096
 
@@ -285,25 +297,25 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       jig_response_send (dev, NULL);
       break;
     case DEVICE5_READY:
-#ifdef NO_DELAYED_PORT_SWITCHING
-      /* if we can't delay the port switching, then we at this point, we can't
-         disconnect the device 3... so we just unregister the driver so that
-         all the devices get virtually disconnected and the exploit works.
-         Since we won't exist after that, let's unlock the spinlock and return.
-      */
-      INFO (dev, "JAILBROKEN!!! DONE!!!!!!!!!\n");
-      INFO (dev, "Congratulations, it should work now, "
-          "all you need to do is pray!");
-      del_timer (&psfreedom_state_machine_timer);
-      timer_added = 0;
-      dev->status = DONE;
-      spin_unlock_irqrestore (&dev->lock, flags);
-      psfreedom_cleanup ();
-      return;
-#else
-      dev->status = DEVICE3_WAIT_DISCONNECT;
-      hub_disconnect_port (dev, 3);
-#endif
+      if (no_delayed_switching) {
+        /* if we can't delay the port switching, then we at this point, we can't
+          disconnect the device 3... so we just unregister the driver so that
+          all the devices get virtually disconnected and the exploit works.
+          Since we won't exist after that, let's unlock the spinlock and return.
+         */
+        INFO (dev, "JAILBROKEN!!! DONE!!!!!!!!!\n");
+        INFO (dev, "Congratulations, it should work now, "
+              "all you need to do is pray!");
+        del_timer (&psfreedom_state_machine_timer);
+        timer_added = 0;
+        dev->status = DONE;
+        spin_unlock_irqrestore (&dev->lock, flags);
+        psfreedom_cleanup ();
+        return;
+      } else {
+        dev->status = DEVICE3_WAIT_DISCONNECT;
+        hub_disconnect_port (dev, 3);
+      }
       break;
     case DEVICE3_DISCONNECTED:
       dev->status = DEVICE5_WAIT_DISCONNECT;
@@ -450,11 +462,11 @@ static int psfreedom_setup(struct usb_gadget *gadget,
   else
     value = devices_setup (gadget, ctrl, request, w_index, w_value, w_length);
 
-#ifdef NO_DELAYED_PORT_SWITCHING
-  if (dev->switch_to_port_delayed >= 0)
-    switch_to_port (dev, dev->switch_to_port_delayed);
-  dev->switch_to_port_delayed = -1;
-#endif
+  if (no_delayed_switching) {
+    if (dev->switch_to_port_delayed >= 0)
+      switch_to_port (dev, dev->switch_to_port_delayed);
+    dev->switch_to_port_delayed = -1;
+  }
 
   DBG (dev, "%s Setup called %s (%d - %d) -> %d (w_length=%d)\n",
       STATUS_STR (dev->status),  REQUEST_STR (request), w_value, w_index,
@@ -1017,6 +1029,9 @@ static int __init psfreedom_init(void)
   int ret = 0;
 
   printk(KERN_INFO "init\n");
+
+  if ( no_delayed_switching )
+    printk(KERN_INFO "No delayed port switching enabled.\n");
 
   /* Determine what speed the controller supports */
   if (psfreedom_is_high_speed ())
