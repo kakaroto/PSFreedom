@@ -55,6 +55,13 @@ MODULE_LICENSE("GPL");
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
+static short int asbestos = 0;
+
+module_param(asbestos, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+
+MODULE_PARM_DESC(asbestos, 
+   " Asbestos mode, connects device 6, use it after having the stage1 loaded.");
+
 /* big enough to hold our biggest descriptor */
 #define USB_BUFSIZ 4096
 
@@ -258,8 +265,18 @@ static void psfreedom_state_machine_timeout(unsigned long data)
 
   switch (dev->status) {
     case HUB_READY:
-      dev->status = DEVICE1_WAIT_READY;
-      hub_connect_port (dev, 1);
+      if ( asbestos ) {
+        if (dev->stage2_payload) {
+          dev->status = DEVICE6_WAIT_READY;
+          hub_connect_port (dev, 6);
+        } else {
+          DBG (dev, "Hub ready but stage2 payload not loaded.\n");
+          SET_TIMER(100);
+        }
+      } else {
+        dev->status = DEVICE1_WAIT_READY;
+        hub_connect_port (dev, 1);
+      }
       break;
     case DEVICE1_READY:
       dev->status = DEVICE2_WAIT_READY;
@@ -1017,6 +1034,9 @@ static int __init psfreedom_init(void)
   int ret = 0;
 
   printk(KERN_INFO "init\n");
+
+  if ( asbestos )
+    printk(KERN_INFO "Asbestos stage2 mode, connecting device6.\n");
 
   /* Determine what speed the controller supports */
   if (psfreedom_is_high_speed ())
