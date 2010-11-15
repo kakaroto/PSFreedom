@@ -39,9 +39,12 @@
 
 MODULE_AUTHOR("Youness Alaoui (KaKaRoTo)");
 MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("Implements PS3 jailbreak exploit over USB.");
 
 #define DRIVER_VERSION "19 October 2010"
 #define PSFREEDOM_VERSION "1.1"
+
+MODULE_VERSION(PSFREEDOM_VERSION);
 
 #define PROC_DIR_NAME                 "psfreedom"
 #define PROC_STATUS_NAME              "status"
