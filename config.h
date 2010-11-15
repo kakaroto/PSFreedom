@@ -14,8 +14,8 @@
 
 #include "pl3/config.h"
 
-//#define DEBUG
-//#define VERBOSE_DEBUG
+#define DEBUG
+#define VERBOSE_DEBUG
 
 
 #endif /* PSFREEDOM_CONFIG_H */

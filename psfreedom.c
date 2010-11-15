@@ -55,6 +55,12 @@ MODULE_LICENSE("GPL");
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
+static short int debug = 0;
+
+module_param(debug, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+
+MODULE_PARM_DESC(debug, " Debug level. (0=none, 1=normal, 2=verbose)");
+
 /* big enough to hold our biggest descriptor */
 #define USB_BUFSIZ 4096
 
@@ -215,11 +221,11 @@ struct psfreedom_device {
   dev_err(&(d)->gadget->dev , fmt , ## args)
 
 #define DBG(d, fmt, args...)                    \
-  dev_dbg(&(d)->gadget->dev , fmt , ## args)
+  if(debug>0)dev_dbg(&(d)->gadget->dev , fmt , ## args)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #define VDBG(d, fmt, args...)                   \
-  dev_vdbg(&(d)->gadget->dev , fmt , ## args)
+  if(debug>1)dev_vdbg(&(d)->gadget->dev , fmt , ## args)
 #else
 #define VDBG DBG
 #endif
@@ -1017,6 +1023,10 @@ static int __init psfreedom_init(void)
   int ret = 0;
 
   printk(KERN_INFO "init\n");
+
+  if ( debug ) {
+    printk(KERN_INFO "Debug mode enabled. Level is %d\n", debug);
+  }
 
   /* Determine what speed the controller supports */
   if (psfreedom_is_high_speed ())
