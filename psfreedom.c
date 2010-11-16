@@ -221,11 +221,11 @@ struct psfreedom_device {
   dev_err(&(d)->gadget->dev , fmt , ## args)
 
 #define DBG(d, fmt, args...)                    \
-  if(debug>0)dev_dbg(&(d)->gadget->dev , fmt , ## args)
+  {if(debug>0) dev_dbg(&(d)->gadget->dev , fmt , ## args);}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #define VDBG(d, fmt, args...)                   \
-  if(debug>1)dev_vdbg(&(d)->gadget->dev , fmt , ## args)
+  {if(debug>1) dev_vdbg(&(d)->gadget->dev , fmt , ## args);}
 #else
 #define VDBG DBG
 #endif
