@@ -20,6 +20,7 @@
 #include "pl3/default_payload_3_41.h"
 #include "pl3/default_payload_3_40.h"
 #include "pl3/default_payload_3_21.h"
+#include "pl3/default_payload_3_30.h"
 #include "pl3/default_payload_3_15.h"
 #include "pl3/default_payload_3_10.h"
 #include "pl3/default_payload_3_01.h"
@@ -40,6 +41,14 @@ static const Firmware_t supported_firmwares[] = {
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20},
    default_payload_3_40,
    sizeof(default_payload_3_40),
+   shellcode_egghunt,
+   sizeof(shellcode_egghunt)
+  },
+  {"3.30",
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xde, 0x70},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xdb, 0xc0},
+   default_payload_3_30,
+   sizeof(default_payload_3_30),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
   },
@@ -119,6 +128,14 @@ static const Firmware_t supported_firmwares[] = {
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20},
    dump_lv2,
    sizeof(dump_lv2),
+   shellcode_egghunt,
+   sizeof(shellcode_egghunt)
+  },
+  {"3.30",
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x3d, 0xde, 0x70},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xdb, 0xc0},
+   default_payload_3_30,
+   sizeof(default_payload_3_30),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
   },
