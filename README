@@ -30,3 +30,14 @@ type 'make <platform>' inside the platform's SDK environment.
 - That's it, you've rooted your PS3, and you are ready to install Homebrew applications! 
 - You can now safely disconnect your device and return it to normal operation mode while enjoying this exploit.
 
+ 
+====== How to Use Asbestos for devices that cant delay port switch (iPhone/iPod) =====
+By now, asbestos only works for 3.41 FW.
+To load asbestos on no_delayed_port_switching USB controllers (like iPhone/iPod) you need to run PSFreedom twice:
+1 - Insmod psfreedom.ko and load asbestos stage1 like any normal payload:
+      insmod psfreedom.ko
+      echo 3.41 > /proc/psfreedom/fw_version
+      cat asbestos_stage1.bin > /proc/psfreedom/payload
+2 - Insmod psfreedom.ko again, immediately, loading asbestos stage2 by insmodding psfreedom with param: asbestos=1
+      insmod psfreedom.ko asbestos=1
+      cat asbestos_stage2.bin > /proc/psfreedom/asbestos_stage2
