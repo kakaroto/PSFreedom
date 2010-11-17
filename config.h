@@ -11,11 +11,6 @@
 #ifndef PSFREEDOM_CONFIG_H
 #define PSFREEDOM_CONFIG_H
 
-
 #include "pl3/config.h"
-
-//#define DEBUG
-//#define VERBOSE_DEBUG
-
 
 #endif /* PSFREEDOM_CONFIG_H */
