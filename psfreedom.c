@@ -60,26 +60,26 @@ MODULE_VERSION(PSFREEDOM_VERSION);
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
-static short int asbestos = 0;
+static int asbestos = 0;
 static short int debug = 0;
 
 #ifdef NO_DELAYED_PORT_SWITCHING
-static short int no_delayed_switching = 1;
+static int no_delayed_switching = 1;
 #else
-static short int no_delayed_switching = 0;
+static int no_delayed_switching = 0;
 #endif
 
 
-module_param(asbestos, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-MODULE_PARM_DESC(asbestos, 
+module_param(asbestos, bool, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+MODULE_PARM_DESC(asbestos,
    " Asbestos mode, connects device 6, use it after having the stage1 loaded.");
 
 module_param(debug, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(debug, " Debug level. (0=none, 1=normal, 2=verbose)");
 
-module_param(no_delayed_switching, short,
+module_param(no_delayed_switching, bool,
              S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-MODULE_PARM_DESC(no_delayed_switching, 
+MODULE_PARM_DESC(no_delayed_switching,
                  " Enable no delayed port switching mode.");
 
 /* big enough to hold our biggest descriptor */
