@@ -41,7 +41,7 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
       if (ep == dev->in_ep) {
         /* our transmit completed.
            see if there's more to go.
-           hub_transmit eats req, don't queue it again. */
+           jig_response_send eats req, don't queue it again. */
         dev->response_len += req->length;
         if (dev->response_len < 64) {
           jig_response_send (dev, req);
@@ -60,7 +60,6 @@ static void jig_response_complete(struct usb_ep *ep, struct usb_request *req)
       VDBG(dev, "%s gone (%d), %d/%d\n", ep->name, status,
           req->actual, req->length);
     case -ECONNRESET:           /* request dequeued */
-      hub_interrupt_queued = 0;
       spin_unlock_irqrestore (&dev->lock, flags);
       return;
 
@@ -99,7 +98,7 @@ static void jig_response_send (struct psfreedom_device *dev,
     req = alloc_ep_req(ep, 8);
 
   if (!req) {
-    ERROR(dev, "hub_interrupt_transmit: alloc_ep_request failed\n");
+    ERROR(dev, "jig_response_send: alloc_ep_request failed\n");
     return;
   }
 
