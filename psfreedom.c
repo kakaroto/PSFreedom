@@ -299,18 +299,8 @@ static void psfreedom_state_machine_timeout(unsigned long data)
 
   switch (dev->status) {
     case HUB_READY:
-      if ( asbestos ) {
-        if (dev->stage2_payload) {
-          dev->status = DEVICE6_WAIT_READY;
-          hub_connect_port (dev, 6);
-        } else {
-          DBG (dev, "Hub ready but stage2 payload not loaded.\n");
-          SET_TIMER(100);
-        }
-      } else {
-        dev->status = DEVICE1_WAIT_READY;
-        hub_connect_port (dev, 1);
-      }
+      dev->status = DEVICE1_WAIT_READY;
+      hub_connect_port (dev, 1);
       break;
     case DEVICE1_READY:
       dev->status = DEVICE2_WAIT_READY;
@@ -427,7 +417,13 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
   /* Reinitialize all device variables*/
   dev->challenge_len = 0;
   dev->response_len = 0;
-  dev->current_port = 0;
+  if (dev->asbestos) {
+    dev->current_port = 6;
+    dev->status = DEVICE6_WAIT_READY;
+  } else {
+    dev->current_port = 0;
+    dev->status = INIT;
+  }
   for (i = 0; i < 6; i++)
     dev->hub_ports[i].status = dev->hub_ports[i].change = 0;
   for (i = 0; i < 7; i++)
@@ -438,7 +434,6 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
     del_timer (&psfreedom_state_machine_timer);
   timer_added = 0;
   dev->switch_to_port_delayed = -1;
-  dev->status = INIT;
 
   spin_unlock_irqrestore (&dev->lock, flags);
 }
