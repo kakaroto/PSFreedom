@@ -17,6 +17,8 @@
  */
 
 #include "psfreedom_devices.h"
+#include "sha1.c"
+#include <linux/random.h>
 
 /* stage1 AsbestOS request */
 #define ASBESTOS_PRINT_DBG_MSG          1
@@ -116,6 +118,38 @@ static void jig_response_send (struct psfreedom_device *dev,
   usb_ep_queue(ep, req, GFP_ATOMIC);
 }
 
+#define JIG_DATA_HEADER_LEN 7
+
+/* Generate the JIG challenge response */
+static void jig_generate_response(struct psfreedom_device *dev)
+{
+  uint16_t dongle_id = (uint16_t) random32 ();
+  uint8_t dongle_key[SHA1_MAC_LEN];
+  int i;
+
+  jig_response[0] = 0x00;
+  jig_response[1] = 0x00;
+  jig_response[2] = 0xFF;
+  jig_response[3] = 0x00;
+  jig_response[4] = 0x2E;
+  jig_response[5] = 0x02;
+  jig_response[6] = 0x02;
+
+  for (i = 0; usb_dongle_revoke_list[i] != 0xFFFF; i++) {
+    if (dongle_id == usb_dongle_revoke_list[i]) {
+      dongle_id = (uint16_t) random32 ();
+      i = -1;
+      continue;
+    }
+  }
+
+  hmac_sha1 (usb_dongle_master_key, SHA1_MAC_LEN,
+      (uint8_t *)&dongle_id, sizeof(uint16_t), dongle_key);
+  hmac_sha1 (dongle_key, SHA1_MAC_LEN,
+      jig_challenge + JIG_DATA_HEADER_LEN, SHA1_MAC_LEN,
+      jig_response + JIG_DATA_HEADER_LEN + sizeof(dongle_id));
+}
+
 /* Received challenge data */
 static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
 {
@@ -131,10 +165,18 @@ static void jig_interrupt_complete(struct usb_ep *ep, struct usb_request *req)
     case 0:                             /* normal completion */
       if (ep == dev->out_ep) {
         /* our transmit completed */
-        /* TODO handle data */
+        memcpy (jig_challenge + dev->challenge_len, req->buf, 8);
+        DBG (dev, "Received %X %X %X %X %X %X %X %X\n",
+            ((char *)req->buf)[0], ((char *)req->buf)[1],
+            ((char *)req->buf)[2], ((char *)req->buf)[3],
+            ((char *)req->buf)[4], ((char *)req->buf)[5],
+            ((char *)req->buf)[6], ((char *)req->buf)[7]);
+
         dev->challenge_len += req->actual;
         DBG (dev, "******Challenge length : %d\n", dev->challenge_len);
         if (dev->challenge_len >= 64) {
+          if (dev->jig)
+            jig_generate_response (dev);
           dev->status = DEVICE5_CHALLENGED;
           SET_TIMER (450);
         }
