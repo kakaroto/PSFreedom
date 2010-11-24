@@ -863,9 +863,9 @@ static int load_firmware (struct psfreedom_device *dev, const char *version)
   memcpy (port4_config_desc_3 + 0x28, firmware->base_address, 8);
 #else
   memcpy (port1_config_desc_prefix + 0x20, firmware->base_address, 8);
-  port1_config_desc_prefix[31] += 0x28;
+  port1_config_desc_prefix[39] += 0x28;
   memcpy (port1_config_desc_prefix + 0x28, firmware->base_address, 8);
-  port1_config_desc_prefix[39] += 0x38;
+  port1_config_desc_prefix[47] += 0x38;
   memcpy (port1_config_desc_prefix + 0x30, firmware->rtoc_address, 8);
 
   memcpy (port4_config_desc_3 + 0x20, firmware->base_address, 8);
