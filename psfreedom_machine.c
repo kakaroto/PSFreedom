@@ -183,7 +183,8 @@ static u8 psfreedom_get_address (struct usb_gadget *g)
   buffer = readl(USBDEVADDR);
   /* The address is in the bits 25-32 */
   address = (u8) (buffer >> 25) & 0x7F;
-  if(debug>1) dev_vdbg(&g->dev, "***** Getting address : %d\n", address);
+  if (debug > 1)
+    dev_vdbg(&g->dev, "***** Getting address : %d\n", address);
 
   return address;
 }
@@ -197,8 +198,9 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
      SET_ADDRESS must be sent with the old address).
   */
   writel((address << 25), USBDEVADDR);
-  if(debug>1) dev_vdbg(&g->dev, "***** Setting address to %d. New address: %d\n",
-      address, psfreedom_get_address(g));
+  if (debug > 1)
+    dev_vdbg(&g->dev, "***** Setting address to %d. New address: %d\n",
+        address, psfreedom_get_address(g));
 }
 
 #endif /* ENABLE_MSM72K_CONTROLLER */
@@ -414,7 +416,8 @@ static u8 psfreedom_get_address (struct usb_gadget *g)
 {
   u32 dcfg = readl(to_hsotg(g)->regs + S3C_DCFG);
 
-  if(debug>1) dev_vdbg(&g->dev, "***** DCFG value (get) : %x\n", dcfg);
+  if (debug > 1)
+    dev_vdbg(&g->dev, "***** DCFG value (get) : %x\n", dcfg);
 
   return (dcfg & S3C_DCFG_DevAddr_MASK) >> S3C_DCFG_DevAddr_SHIFT;
 }
@@ -431,8 +434,9 @@ static void psfreedom_set_address (struct usb_gadget *g, u8 address)
 
   writel(dcfg, hsotg->regs + S3C_DCFG);
 
-  if(debug>1) dev_vdbg(&g->dev, "***** Setting address to %d. New address: %d\n",
-      address, psfreedom_get_address(g));
+  if (debug > 1)
+    dev_vdbg(&g->dev, "***** Setting address to %d. New address: %d\n",
+        address, psfreedom_get_address(g));
 
 }
 
