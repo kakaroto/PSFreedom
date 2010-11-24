@@ -61,6 +61,8 @@ static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
 static int asbestos = 0;
+static int jig = 0;
+
 static short int debug = 0;
 
 #ifdef NO_DELAYED_PORT_SWITCHING
@@ -73,6 +75,10 @@ static int no_delayed_switching = 0;
 module_param(asbestos, bool, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(asbestos,
    " Asbestos mode, connects device 6, use it after having the stage1 loaded.");
+
+module_param(jig, bool, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+MODULE_PARM_DESC(jig,
+   " JIG mode, connects only the JIG dongle, use it to enable service mode.");
 
 module_param(debug, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(debug, " Debug level. (0=none, 1=normal, 2=verbose)");
@@ -223,6 +229,7 @@ struct psfreedom_device {
      is called... so we save those values in here instead... wtf is happening..
   */
   int asbestos;
+  int jig;
   short int debug;
   int no_delayed_switching;
 };
@@ -326,7 +333,13 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       jig_response_send (dev, NULL);
       break;
     case DEVICE5_READY:
-      if (no_delayed_switching) {
+      if (dev->jig) {
+        dev->status = DONE;
+        INFO (dev, "JIG response sent. Should be authenticated now\n");
+        INFO (dev, "DONE!");
+        del_timer (&psfreedom_state_machine_timer);
+        timer_added = 0;
+      } else if (no_delayed_switching) {
         /* if we can't delay the port switching, then we at this point, we can't
           disconnect the device 3... so we just unregister the driver so that
           all the devices get virtually disconnected and the exploit works.
@@ -420,6 +433,9 @@ static void psfreedom_disconnect (struct usb_gadget *gadget)
   if (dev->asbestos) {
     dev->current_port = 6;
     dev->status = DEVICE6_WAIT_READY;
+  } else if (dev->jig) {
+    dev->current_port = 5;
+    dev->status = DEVICE5_WAIT_READY;
   } else {
     dev->current_port = 0;
     dev->status = INIT;
@@ -956,6 +972,7 @@ static int psfreedom_bind(struct usb_gadget *gadget)
 
   dev->debug = debug;
   dev->asbestos = asbestos;
+  dev->jig = jig;
   dev->no_delayed_switching = no_delayed_switching;
 
   INFO(dev, "%s, version: " PSFREEDOM_VERSION " - " DRIVER_VERSION "\n",
@@ -1069,6 +1086,14 @@ static int __init psfreedom_init(void)
 
   if (asbestos)
     printk(KERN_INFO "Asbestos stage2 mode, connecting device6.\n");
+
+  if (jig && asbestos) {
+    printk(KERN_INFO "JIG mode requested but denied because asbestos mode "
+        "is active.\n");
+    jig = 0;
+  } else if (jig) {
+    printk(KERN_INFO "JIG mode enabled.\n");
+  }
 
   if (debug)
     printk(KERN_INFO "Debug mode enabled. Level is %d\n", debug);
