@@ -60,24 +60,24 @@ MODULE_VERSION(PSFREEDOM_VERSION);
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
 
-static int asbestos = 0;
-static short int debug = 0;
+unsigned asbestos = 0;
+unsigned debug_level = 0;
 
 #ifdef NO_DELAYED_PORT_SWITCHING
-static int no_delayed_switching = 1;
+unsigned no_delayed_switching = 1;
 #else
-static int no_delayed_switching = 0;
+unsigned no_delayed_switching = 0;
 #endif
 
 
-module_param(asbestos, bool, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+module_param(asbestos, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(asbestos,
    " Asbestos mode, connects device 6, use it after having the stage1 loaded.");
 
-module_param(debug, short, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
-MODULE_PARM_DESC(debug, " Debug level. (0=none, 1=normal, 2=verbose)");
+module_param(debug_level, uint, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+MODULE_PARM_DESC(debug_level, " Debug level. (0=none, 1=normal, 2=verbose)");
 
-module_param(no_delayed_switching, bool,
+module_param(no_delayed_switching, uint,
              S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 MODULE_PARM_DESC(no_delayed_switching,
                  " Enable no delayed port switching mode.");
@@ -217,14 +217,6 @@ struct psfreedom_device {
   /* pointer to stage2 payload */
   char *stage2_payload;
   unsigned int stage2_payload_size;
-  /* Module params */
-  /* For some *magical* reason, the first module parameter being referenced
-     in the DBG macro will get reset to its default value after the init proc
-     is called... so we save those values in here instead... wtf is happening..
-  */
-  int _asbestos;
-  short int _debug;
-  int _no_delayed_switching;
 };
 
 
@@ -251,15 +243,15 @@ struct psfreedom_device {
 
 #define DBG(d, fmt, args...)                        \
   {                                                 \
-    if (d->_debug > 0)                               \
-      dev_dbg(&(d)->gadget->dev , fmt , ## args);   \
+    if (debug_level > 0)                            \
+      dev_dbg(&(d)->gadget->dev , fmt , ## args);  \
   }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #define VDBG(d, fmt, args...)                       \
   {                                                 \
-    if (d->_debug > 1)                               \
-      dev_vdbg(&(d)->gadget->dev , fmt , ## args);  \
+    if (debug_level > 1)                            \
+      dev_dbg(&(d)->gadget->dev , fmt , ## args);  \
   }
 #else
 #define VDBG DBG
@@ -348,9 +340,6 @@ static void psfreedom_state_machine_timeout(unsigned long data)
         del_timer (&psfreedom_state_machine_timer);
         timer_added = 0;
         dev->status = DONE;
-        spin_unlock_irqrestore (&dev->lock, flags);
-        psfreedom_cleanup ();
-        return;
       } else {
         dev->status = DEVICE3_WAIT_DISCONNECT;
         hub_disconnect_port (dev, 3);
@@ -959,10 +948,6 @@ static int psfreedom_bind(struct usb_gadget *gadget)
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
 
-  dev->_debug = debug;
-  dev->_asbestos = asbestos;
-  dev->_no_delayed_switching = no_delayed_switching;
-
   INFO(dev, "%s, version: " PSFREEDOM_VERSION " - " DRIVER_VERSION "\n",
       longname);
 
@@ -1075,8 +1060,8 @@ static int __init psfreedom_init(void)
   if (asbestos)
     printk(KERN_INFO "Asbestos stage2 mode, connecting device6.\n");
 
-  if (debug)
-    printk(KERN_INFO "Debug mode enabled. Level is %d\n", debug);
+  if (debug_level)
+    printk(KERN_INFO "Debug mode enabled. Level is %d\n", debug_level);
 
   if (no_delayed_switching)
     printk(KERN_INFO "No delayed port switching enabled.\n");
