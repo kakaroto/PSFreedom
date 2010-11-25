@@ -24,7 +24,9 @@
 #include "pl3/default_payload_3_15.h"
 #include "pl3/default_payload_3_10.h"
 #include "pl3/default_payload_3_01.h"
+#include "pl3/default_payload_2_85.h"
 #include "pl3/default_payload_2_76.h"
+#include "pl3/shellcode_panic.h"
 
 /* Default firmware is the first entry in the list */
 static const Firmware_t supported_firmwares[] = {
@@ -81,6 +83,14 @@ static const Firmware_t supported_firmwares[] = {
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x32, 0x06, 0x40},
    default_payload_3_01,
    sizeof(default_payload_3_01),
+   shellcode_egghunt,
+   sizeof(shellcode_egghunt)
+  },
+  {"2.85",
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x3B, 0xBB, 0xC8},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x31, 0x3E, 0x70},
+   shellcode_panic,
+   sizeof(shellcode_panic),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
   },
