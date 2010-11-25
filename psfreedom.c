@@ -251,7 +251,7 @@ struct psfreedom_device {
 #define VDBG(d, fmt, args...)                       \
   {                                                 \
     if (debug_level > 1)                            \
-      dev_dbg(&(d)->gadget->dev , fmt , ## args);  \
+      dev_vdbg(&(d)->gadget->dev , fmt , ## args);  \
   }
 #else
 #define VDBG DBG
