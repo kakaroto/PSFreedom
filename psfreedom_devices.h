@@ -115,6 +115,14 @@ static const Firmware_t supported_firmwares[] = {
 #define SHELLCODE_ADDRESS       SHELLCODE_ADDR_BASE + 0x38
 
 static const Firmware_t supported_firmwares[] = {
+  {"x.yz",
+   {SHELLCODE_ADDR_BASE},
+   {0x80, 0x00, 0x00, 0x00, 0x00, 0x31, 0x3E, 0x70},
+   shellcode_panic,
+   sizeof(shellcode_panic),
+   shellcode_panic,
+   sizeof(shellcode_panic)
+  },
   {"3.41",
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x4D, 0x10, 0x00},
    {0x80, 0x00, 0x00, 0x00, 0x00, 0x33, 0xe7, 0x20},
@@ -178,14 +186,6 @@ static const Firmware_t supported_firmwares[] = {
    sizeof(dump_lv2),
    shellcode_egghunt,
    sizeof(shellcode_egghunt)
-  },
-  {"x.yz",
-   {SHELLCODE_ADDR_BASE},
-   {0x80, 0x00, 0x00, 0x00, 0x00, 0x31, 0x3E, 0x70},
-   shellcode_panic,
-   sizeof(shellcode_panic),
-   shellcode_panic,
-   sizeof(shellcode_panic)
   },
   {NULL}
 };

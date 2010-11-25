@@ -222,9 +222,9 @@ struct psfreedom_device {
      in the DBG macro will get reset to its default value after the init proc
      is called... so we save those values in here instead... wtf is happening..
   */
-  int asbestos;
-  short int debug;
-  int no_delayed_switching;
+  int _asbestos;
+  short int _debug;
+  int _no_delayed_switching;
 };
 
 
@@ -251,14 +251,14 @@ struct psfreedom_device {
 
 #define DBG(d, fmt, args...)                        \
   {                                                 \
-    if (d->debug > 0)                               \
+    if (d->_debug > 0)                               \
       dev_dbg(&(d)->gadget->dev , fmt , ## args);   \
   }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,23)
 #define VDBG(d, fmt, args...)                       \
   {                                                 \
-    if (d->debug > 1)                               \
+    if (d->_debug > 1)                               \
       dev_vdbg(&(d)->gadget->dev , fmt , ## args);  \
   }
 #else
@@ -959,9 +959,9 @@ static int psfreedom_bind(struct usb_gadget *gadget)
   dev->gadget = gadget;
   set_gadget_data(gadget, dev);
 
-  dev->debug = debug;
-  dev->asbestos = asbestos;
-  dev->no_delayed_switching = no_delayed_switching;
+  dev->_debug = debug;
+  dev->_asbestos = asbestos;
+  dev->_no_delayed_switching = no_delayed_switching;
 
   INFO(dev, "%s, version: " PSFREEDOM_VERSION " - " DRIVER_VERSION "\n",
       longname);
