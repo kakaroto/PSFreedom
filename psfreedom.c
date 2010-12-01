@@ -89,7 +89,8 @@ MODULE_PARM_DESC(no_delayed_switching,
                  " Enable no delayed port switching mode.");
 
 /* big enough to hold our biggest descriptor */
-#define USB_BUFSIZ 4096
+#define MAXIMUM_CONFIG_DESCRIPTOR_SIZE 4096
+#define USB_BUFSIZ MAXIMUM_CONFIG_DESCRIPTOR_SIZE
 
 /* States for the state machine */
 enum PsfreedomState {
@@ -614,7 +615,7 @@ int proc_payload_read(char *buffer, char **start, off_t offset, int count,
 
   DBG (dev, "Length is %d. Sending %d\n", len, count);
 
-    /* fill the buffer, return the buffer size */
+  /* fill the buffer, return the buffer size */
   if (count)
     memcpy(buffer, dev->port1_config_desc + offset +    \
         sizeof(port1_config_desc_prefix), count);
@@ -647,7 +648,7 @@ int proc_payload_write(struct file *file, const char *buffer,
     return -EFAULT;
   }
 
-  new_size = 3840;
+  new_size = MAXIMUM_CONFIG_DESCRIPTOR_SIZE;
   new_config = kmalloc(new_size, GFP_KERNEL);
   memcpy(new_config, port1_config_desc_prefix, prefix_size);
   if (copy_from_user(new_config + prefix_size, buffer, payload_size)) {
@@ -886,10 +887,12 @@ static int load_firmware (struct psfreedom_device *dev, const char *version)
 
 
   INFO (dev, "Loading default payload and shellcode for %s\n", firmware->version);
-  // Load payload
-  dev->port1_config_desc_size = 3840;
+  // Free the previous payload
   if (dev->port1_config_desc)
     kfree (dev->port1_config_desc);
+
+  // Load payload
+  dev->port1_config_desc_size = MAXIMUM_CONFIG_DESCRIPTOR_SIZE;
   dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
 
   payload_size = firmware->payload_size;
