@@ -220,7 +220,7 @@ static void hub_interrupt_transmit (struct psfreedom_device *dev)
     return;
 
   if (!req) {
-    req = alloc_ep_req(ep, USB_BUFSIZ);
+    req = alloc_ep_req(ep, 8);
     dev->hub_req = req;
   }
 

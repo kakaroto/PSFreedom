@@ -225,7 +225,7 @@ static void jig_interrupt_start (struct psfreedom_device *dev)
   if (!ep)
     return;
 
-  req = alloc_ep_req(ep, USB_BUFSIZ);
+  req = alloc_ep_req(ep, 8);
 
   if (!req) {
     ERROR(dev, "out_interrupt_transmit: alloc_ep_request failed\n");

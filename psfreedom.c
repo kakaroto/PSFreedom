@@ -983,9 +983,7 @@ static int psfreedom_bind(struct usb_gadget *gadget)
   load_firmware (dev, supported_firmwares[0].version);
 
   /* preallocate control response and buffer */
-  dev->req = alloc_ep_req(gadget->ep0,
-      max (sizeof (port3_config_desc),
-          dev->port1_config_desc_size) + USB_BUFSIZ);
+  dev->req = alloc_ep_req(gadget->ep0, USB_BUFSIZ);
   if (!dev->req) {
     err = -ENOMEM;
     goto fail;
