@@ -888,6 +888,8 @@ static int load_firmware (struct psfreedom_device *dev, const char *version)
   INFO (dev, "Loading default payload and shellcode for %s\n", firmware->version);
   // Load payload
   dev->port1_config_desc_size = 3840;
+  if (dev->port1_config_desc)
+    kfree (dev->port1_config_desc);
   dev->port1_config_desc = kmalloc(dev->port1_config_desc_size, GFP_KERNEL);
 
   payload_size = firmware->payload_size;
