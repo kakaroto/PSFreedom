@@ -145,7 +145,7 @@ static void jig_generate_response(struct psfreedom_device *dev)
   jig_response[8] = dongle_id & 0xFF;
 
 
-  hmac_sha1 (usb_dongle_master_key, SHA1_MAC_LEN,
+  hmac_sha1 (usb_dongle_master_key, sizeof(usb_dongle_master_key),
       (uint8_t *)&dongle_id, sizeof(uint16_t), dongle_key);
   hmac_sha1 (dongle_key, SHA1_MAC_LEN,
       jig_challenge + JIG_DATA_HEADER_LEN, SHA1_MAC_LEN,
