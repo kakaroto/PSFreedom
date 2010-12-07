@@ -214,8 +214,17 @@ static struct usb_endpoint_descriptor jig_in_endpoint_desc = {
   .bInterval =          0x00,
 };
 
+#ifdef HAVE_MASTER_KEY
 static u16 usb_dongle_revoke_list[] = {0, 2, 13, 32, 34, 176, 241, 0xFFFF};
-static u8 usb_dongle_master_key[20] = {0};
+static u8 usb_dongle_master_key[] = {0};
+#endif
+
+static u8 usb_dongle_key[20] = {
+  0x04, 0x4E, 0x61, 0x1B, 0xA6, 0xA6, 0xE3, 0x9A,
+  0x98, 0xCF, 0x35, 0x81, 0x2C, 0x80, 0x68, 0xC7,
+  0xFC, 0x5F, 0x7A, 0xE8,
+};
+
 
 static u8 jig_challenge[64] = {0};
 

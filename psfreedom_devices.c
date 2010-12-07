@@ -124,7 +124,8 @@ static void jig_response_send (struct psfreedom_device *dev,
 static void jig_generate_response(struct psfreedom_device *dev)
 {
   uint16_t dongle_id;
-  uint8_t dongle_key[SHA1_MAC_LEN];
+
+#ifdef HAVE_MASTER_KEY
   int i;
 
  restart:
@@ -133,6 +134,9 @@ static void jig_generate_response(struct psfreedom_device *dev)
     if (dongle_id == usb_dongle_revoke_list[i])
       goto restart;
   }
+#else
+  dongle_id = 0xaaaa;
+#endif
 
   jig_response[0] = 0x00;
   jig_response[1] = 0x00;
@@ -145,9 +149,12 @@ static void jig_generate_response(struct psfreedom_device *dev)
   jig_response[8] = dongle_id & 0xFF;
 
 
+#ifdef HAVE_MASTER_KEY
   hmac_sha1 (usb_dongle_master_key, sizeof(usb_dongle_master_key),
-      (uint8_t *)&dongle_id, sizeof(uint16_t), dongle_key);
-  hmac_sha1 (dongle_key, SHA1_MAC_LEN,
+      (uint8_t *)&dongle_id, sizeof(uint16_t), usb_dongle_key);
+#endif
+
+  hmac_sha1 (usb_dongle_key, SHA1_MAC_LEN,
       jig_challenge + JIG_DATA_HEADER_LEN, SHA1_MAC_LEN,
       jig_response + JIG_DATA_HEADER_LEN + sizeof(dongle_id));
 }
