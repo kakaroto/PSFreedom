@@ -56,6 +56,7 @@ MODULE_VERSION(PSFREEDOM_VERSION);
 #define PROC_SUPPORTED_FIRMWARES_NAME "supported_firmwares"
 #define PROC_FW_VERSION_NAME          "fw_version"
 #define PROC_STAGE2_NAME              "asbestos_stage2"
+#define PROC_JIG_MODE_NAME            "jig_mode"
 
 static const char shortname[] = "PSFreedom";
 static const char longname[] = "PS3 Jailbreak exploit";
@@ -219,6 +220,7 @@ struct psfreedom_device {
   struct proc_dir_entry *proc_supported_firmwares_entry;
   struct proc_dir_entry *proc_fw_version_entry;
   struct proc_dir_entry *proc_stage2_entry;
+  struct proc_dir_entry *proc_jig_mode_entry;
   /* current firmware compatibility */
   const Firmware_t      *firmware;
   /* pointer to stage2 payload */
@@ -813,6 +815,42 @@ int proc_stage2_write(struct file *file, const char *buffer,
   return count;
 }
 
+int proc_jig_mode_read(char *buffer, char **start, off_t offset, int count,
+    int *eof, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+
+  INFO (dev, "proc_jig_mode_read (/proc/%s/%s) called. count %d\n",
+      PROC_DIR_NAME, PROC_JIG_MODE_NAME, count);
+  
+  strcpy (buffer + offset, (dev->jig) ? "Enabled" : "Disabled");
+  strcat (buffer + offset, "\n");
+
+  *eof = 1;
+  /* fill the buffer, return the buffer size */
+  return strlen (buffer + offset);
+}
+
+int proc_jig_mode_write(struct file *file, const char *buffer,
+    unsigned long count, void *user_data)
+{
+  struct psfreedom_device *dev = user_data;
+  int val = -1;
+
+  INFO (dev, "proc_jig_mode_write (/proc/%s/%s) called. count %lu\n",
+      PROC_DIR_NAME, PROC_JIG_MODE_NAME, count);
+
+  sscanf (buffer, "%d", &val);
+  if (val < 0 || val > 1) {
+    ERROR (dev, "Error: Entered value is not valid. Value must be 0 or 1.\n");
+    return -EFAULT;
+  }
+
+  dev->jig = val;
+
+  return count;
+}
+
 static void create_proc_fs (struct psfreedom_device *dev,
     struct proc_dir_entry **entry,  char *procfs_filename,
     read_proc_t read_proc, write_proc_t write_proc)
@@ -952,6 +990,8 @@ static void /* __init_or_exit */ psfreedom_unbind(struct usb_gadget *gadget)
       remove_proc_entry(PROC_FW_VERSION_NAME, dev->proc_dir);
     if (dev->proc_stage2_entry)
       remove_proc_entry(PROC_STAGE2_NAME, dev->proc_dir);
+    if (dev->proc_jig_mode_entry)
+      remove_proc_entry(PROC_JIG_MODE_NAME, dev->proc_dir);
     if (dev->proc_dir)
       remove_proc_entry(PROC_DIR_NAME, NULL);
     kfree(dev);
@@ -1029,6 +1069,8 @@ static int psfreedom_bind(struct usb_gadget *gadget)
         PROC_FW_VERSION_NAME, proc_fw_version_read, proc_fw_version_write);
     create_proc_fs (dev, &dev->proc_stage2_entry,
         PROC_STAGE2_NAME, NULL, proc_stage2_write);
+    create_proc_fs (dev, &dev->proc_jig_mode_entry,
+        PROC_JIG_MODE_NAME, proc_jig_mode_read, proc_jig_mode_write);
     /* that's it for now..*/
   }
 
