@@ -337,7 +337,7 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       if (dev->jig) {
         dev->status = DONE;
         INFO (dev, "JIG response sent. Should be authenticated now\n");
-        INFO (dev, "DONE!");
+        INFO (dev, "DONE!\n");
         del_timer (&psfreedom_state_machine_timer);
         timer_added = 0;
       } else if (no_delayed_switching) {
@@ -385,7 +385,7 @@ static void psfreedom_state_machine_timeout(unsigned long data)
       } else {
         dev->status = DONE;
         INFO (dev, "JAILBROKEN!!! DONE!!!!!!!!!\n");
-        INFO (dev, "Congratulations, worked!");
+        INFO (dev, "Congratulations, worked!\n");
         del_timer (&psfreedom_state_machine_timer);
         timer_added = 0;
       }
