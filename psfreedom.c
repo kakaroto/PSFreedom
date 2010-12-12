@@ -555,6 +555,9 @@ int proc_shellcode_read(char *buffer, char **start, off_t offset, int count,
       PROC_DIR_NAME, PROC_PAYLOAD_NAME, count,
       (void *)offset, (void *)(offset + count));
 
+  if (dev->jig)
+    return -EFAULT;
+
   spin_lock_irqsave (&dev->lock, flags);
   if (offset < 40) {
     /* fill the buffer, return the buffer size */
@@ -575,6 +578,9 @@ int proc_shellcode_write(struct file *file, const char *buffer,
 
   INFO (dev, "proc_shellcode_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_SHELLCODE_NAME, count);
+
+  if (dev->jig)
+    return -EFAULT;
 
   if (count != 40) {
     ERROR (dev, "Shellcode must be 40 bytes long! Received %lu bytes\n", count);
@@ -601,12 +607,15 @@ int proc_payload_read(char *buffer, char **start, off_t offset, int count,
   unsigned int len;
   unsigned long flags;
 
-  spin_lock_irqsave (&dev->lock, flags);
-
   INFO (dev, "proc_payload_read (/proc/%s/%s) called. count %d."
       "Offset 0x%p - 0x%p\n",
       PROC_DIR_NAME, PROC_PAYLOAD_NAME, count,
       (void *)offset, (void *)(offset + count));
+
+  if (dev->jig)
+    return -EFAULT;
+
+  spin_lock_irqsave (&dev->lock, flags);
 
   len = dev->port1_config_desc_size - sizeof(port1_config_desc_prefix);
 
@@ -644,6 +653,9 @@ int proc_payload_write(struct file *file, const char *buffer,
   INFO (dev, "proc_payload_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_PAYLOAD_NAME, count);
 
+  if (dev->jig)
+    return -EFAULT;
+
   if (prefix_size + payload_size > dev->port1_config_desc_size) {
     ERROR (dev, "Error: Payload size is more than the maximum allowed of %d\n",
         dev->port1_config_desc_size - prefix_size);
@@ -674,6 +686,9 @@ int proc_version_read(char *buffer, char **start, off_t offset, int count,
 
   INFO (dev, "proc_version_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_VERSION_NAME, count);
+
+  if (dev->jig)
+    return -EFAULT;
 
   *eof = 1;
   /* fill the buffer, return the buffer size */
@@ -711,9 +726,13 @@ int proc_fw_version_read(char *buffer, char **start, off_t offset, int count,
   unsigned long flags;
   unsigned int len;
 
-  spin_lock_irqsave (&dev->lock, flags);
   INFO (dev, "proc_fw_version_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_FW_VERSION_NAME, count);
+
+  if (dev->jig)
+    return -EFAULT;
+
+  spin_lock_irqsave (&dev->lock, flags);
 
   *eof = 1;
   /* fill the buffer, return the buffer size */
@@ -736,6 +755,8 @@ int proc_fw_version_write(struct file *file, const char *buffer,
   INFO (dev, "proc_fw_version_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_FW_VERSION_NAME, count);
 
+  if (dev->jig)
+    return -EFAULT;
 
   if (count > sizeof(version)-1) {
     ERROR (dev, "Firmware version entered is too long %lu. Unacceptable\n", count);
@@ -762,6 +783,9 @@ int proc_supported_firmwares_read(char *buffer, char **start, off_t offset, int 
 
   INFO (dev, "proc_supported_firmwares_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_SUPPORTED_FIRMWARES_NAME, count);
+
+  if (dev->jig)
+    return -EFAULT;
 
   buffer[offset] = 0;
   for (firmware = supported_firmwares; firmware->version; firmware++) {
@@ -793,6 +817,9 @@ int proc_stage2_write(struct file *file, const char *buffer,
   INFO (dev, "proc_asbestos_stage2_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_STAGE2_NAME, count);
 
+  if (dev->jig)
+    return -EFAULT;
+
   if (dev->stage2_payload != NULL) {
     char *tmp = kmalloc(dev->stage2_payload_size + count, GFP_KERNEL);
     memcpy (tmp, dev->stage2_payload, dev->stage2_payload_size);
@@ -823,12 +850,9 @@ int proc_jig_mode_read(char *buffer, char **start, off_t offset, int count,
   INFO (dev, "proc_jig_mode_read (/proc/%s/%s) called. count %d\n",
       PROC_DIR_NAME, PROC_JIG_MODE_NAME, count);
   
-  strcpy (buffer + offset, (dev->jig) ? "Enabled" : "Disabled");
-  strcat (buffer + offset, "\n");
-
   *eof = 1;
-  /* fill the buffer, return the buffer size */
-  return strlen (buffer + offset);
+
+  return sprintf (buffer + offset, "%d\n", dev->jig);
 }
 
 int proc_jig_mode_write(struct file *file, const char *buffer,
@@ -840,13 +864,14 @@ int proc_jig_mode_write(struct file *file, const char *buffer,
   INFO (dev, "proc_jig_mode_write (/proc/%s/%s) called. count %lu\n",
       PROC_DIR_NAME, PROC_JIG_MODE_NAME, count);
 
-  sscanf (buffer, "%d", &val);
+  sscanf (buffer, "%d\n", &val);
   if (val < 0 || val > 1) {
     ERROR (dev, "Error: Entered value is not valid. Value must be 0 or 1.\n");
     return -EFAULT;
   }
 
   dev->jig = val;
+  psfreedom_disconnect (dev->gadget);
 
   return count;
 }
