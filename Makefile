@@ -28,13 +28,14 @@ endif
 
 build:
 	$(MAKE) -C pl3
-	$(MAKE) -C $(KDIR) M=$(PWD) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=${EXTRAVERSION} modules
+	$(MAKE) -C $(KDIR) M=$(PWD) $(PARAM) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=${EXTRAVERSION} modules
 
 clean:
 	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
 	rm -rf .tmp_versions
 
 # Aliases for generic devices
+igep: Igep
 n900: build_omap1
 n800: build_omap1
 n810: build_omap1
@@ -100,3 +101,9 @@ IPHONE: EXTRA_CFLAGS += -DENABLE_S3C_CONTROLLER -DNO_DELAYED_PORT_SWITCHING
 IPHONE: KDIR := /usr/src/kernel_common/
 IPHONE: EXTRAVERSION:=
 IPHONE: build
+
+Igep: EXTRA_CFLAGS := -DENABLE_MUSB_CONTROLLER 
+Igep: KDIR	:= /usr/src/linux-omap-2.6/
+Igep: EXTRAVERSION:=-omap3
+Igep: PARAM:= ARCH=arm CROSS_COMPILE=arm-none-linux-gnueabi-
+Igep: build
