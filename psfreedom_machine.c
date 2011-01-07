@@ -64,7 +64,7 @@ static int psfreedom_is_low_speed (void)
  * Make sure each endpoint requested (1 IN, 2 IN and 2 OUT) has a different
  * endpoint name to avoid a single endpoint being used for different devices.
  *
- * Returs: the name of the endpoint
+ * Returns: the name of the endpoint
  */
 static char *psfreedom_get_endpoint_name (struct usb_endpoint_descriptor *desc)
 {
