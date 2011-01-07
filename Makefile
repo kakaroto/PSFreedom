@@ -31,7 +31,7 @@ build:
 	$(MAKE) -C $(KDIR) M=$(PWD) $(PARAM) EXTRA_CFLAGS="${EXTRA_CFLAGS}" EXTRAVERSION=${EXTRAVERSION} modules
 
 clean:
-	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
+	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c Module.symvers modules.order
 	rm -rf .tmp_versions
 
 # Aliases for generic devices
