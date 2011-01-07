@@ -169,6 +169,10 @@ enum PsfreedomState {
 #include "hub.h"
 #include "psfreedom_machine.c"
 
+#ifdef debug
+#undef debug
+#endif
+
 typedef struct {
   const char *version;
   const u8 base_address[8];
